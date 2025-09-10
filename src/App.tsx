@@ -47,10 +47,9 @@ function RuleEditor({ label, rules, onChange }: { label: string, rules: number[]
 type Direction = 'up' | 'down' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 type SpreadPattern = 'random' | 'conway' | 'pulse' | 'directional' | 'tendrils' | 'vein' | 'crystallize' | 'erosion' | 'flow' | 'jitter' | 'vortex' | 'strobe' | 'scramble' | 'ripple';
 
-type BrushType = 'square' | 'circle' | 'diagonal' | 'spray'; // BRUSH PATCH
 
 
-export default function ModularSettingsPaintStudio(): JSX.Element {
+export default function RoughImageGenerator(): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const canvasContainerRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -67,17 +66,14 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
   const ripplesRef = useRef<{r: number, c: number, color: number, radius: number, maxRadius: number}[]>([]);
 
   const defaults = {
-    cellSize: 10,
-    rows: 100,
-    cols: 165,
+    cellSize: 8,
+    rows: 80,
+    cols: 80,
     showGrid: false,
     backgroundColor: '#0a0a0a',
-    brushSize: 2,
     selectedColor: 1,
     spreadProbability: 0.2,
     autoSpreadSpeed: 3,
-    autoDotsSpeed: 2,
-    autoShapesSpeed: 1,
     blendMode: 'replace',
     spreadPattern: 'random' as SpreadPattern,
     pulseSpeed: 10,
@@ -115,32 +111,20 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
   const [grid, setGrid] = useState<number[][]>(() => createEmptyGrid(defaults.rows, defaults.cols));
   const [showGrid, setShowGrid] = useState(defaults.showGrid);
   const [backgroundColor, setBackgroundColor] = useState(defaults.backgroundColor);
-  const [brushSize, setBrushSize] = useState(defaults.brushSize);
   const [selectedColor, setSelectedColor] = useState(defaults.selectedColor);
+  const [uploadedImage, setUploadedImage] = useState<HTMLImageElement | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [spreadProbability, setSpreadProbability] = useState(defaults.spreadProbability);
   const [autoSpreadSpeed, setAutoSpreadSpeed] = useState(defaults.autoSpreadSpeed);
-  const [autoDotsSpeed, setAutoDotsSpeed] = useState(defaults.autoDotsSpeed);
-  const [autoShapesSpeed, setAutoShapesSpeed] = useState(defaults.autoShapesSpeed);
   const [autoSpreading, setAutoSpreading] = useState(false);
-  const [autoDots, setAutoDots] = useState(false);
-  const [autoShapes, setAutoShapes] = useState(false);
   const [autoSpreadEnabled, setAutoSpreadEnabled] = useState(true);
+  const [autoDots, setAutoDots] = useState(false);
   const [autoDotsEnabled, setAutoDotsEnabled] = useState(true);
+  const [autoDotsSpeed, setAutoDotsSpeed] = useState(defaults.autoDotsSpeed || 1);
+  const [autoShapes, setAutoShapes] = useState(false);
   const [autoShapesEnabled, setAutoShapesEnabled] = useState(true);
+  const [autoShapesSpeed, setAutoShapesSpeed] = useState(defaults.autoShapesSpeed || 1);
   const [blendMode, setBlendMode] = useState(defaults.blendMode);
-  const [tool, setTool] = useState('brush');
-  const [brushType, setBrushType] = useState<BrushType>('square');
-    const [sprayDensity, setSprayDensity] = useState(0.3); // BRUSH PATCH
-  const [diagonalThickness, setDiagonalThickness] = useState(1);
-  const brushTypeRef = useRef<BrushType>('square'); // BRUSH PATCH
-    const sprayDensityRef = useRef(sprayDensity); // BRUSH PATCH
-  const diagonalThicknessRef = useRef(diagonalThickness); // BRUSH PATCH
-
-  useEffect(() => { brushTypeRef.current = brushType; }, [brushType]); // BRUSH PATCH
-    useEffect(() => { sprayDensityRef.current = sprayDensity; }, [sprayDensity]); // BRUSH PATCH
-  useEffect(() => { diagonalThicknessRef.current = diagonalThickness; }, [diagonalThickness]); // BRUSH PATCH
- // BRUSH PATCH
- // BRUSH PATCH
   const [panelMinimized, setPanelMinimized] = useState(false);
   const [showSpeedSettings, setShowSpeedSettings] = useState(false);
   const [showCanvasSettings, setShowCanvasSettings] = useState(false);
@@ -370,119 +354,74 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
 
   useEffect(() => draw(), [draw]);
 
-  const paintCell = (r: number, c: number, color: number) => {
-    if (r < 0 || r >= rows || c < 0 || c >= cols) return;
-    
-    setGrid(g => {
-      const ng = cloneGrid(g);
-      for (let dr = -Math.floor(brushSize/2); dr <= Math.floor(brushSize/2); dr++) {
-        for (let dc = -Math.floor(brushSize/2); dc <= Math.floor(brushSize/2); dc++) {
-          const nr = r + dr;
-          const nc = c + dc;
-          if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
-            let shouldPaint = false; // BRUSH PATCH
-            switch (brushTypeRef.current) { // BRUSH PATCH
-              case 'square':
-                shouldPaint = true;
-                break;
-              case 'circle': {
-  const radius = Math.floor(brushSize / 2);
-  shouldPaint = dr * dr + dc * dc <= radius * radius;
-  break;
-}
-              case 'diagonal':
-                shouldPaint = Math.abs(dr) === Math.abs(dc) && Math.abs(dr) <= diagonalThicknessRef.current;
-                break;
-              case 'spray':
-                shouldPaint = Math.random() < sprayDensityRef.current;
-                break;
-            }
-            if (!shouldPaint) continue;
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-            if (blendMode === 'replace' || ng[nr][nc] === 0) {
-              ng[nr][nc] = color;
-            } else if (blendMode === 'overlay' && color > 0) {
-              ng[nr][nc] = color;
+    setImageFile(file);
+    const img = new Image();
+    img.onload = () => {
+      setUploadedImage(img);
+      convertImageToGrid(img);
+    };
+    img.src = URL.createObjectURL(file);
+  };
+
+  const convertImageToGrid = (img: HTMLImageElement) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    canvas.width = cols;
+    canvas.height = rows;
+    ctx.drawImage(img, 0, 0, cols, rows);
+    
+    const imageData = ctx.getImageData(0, 0, cols, rows);
+    const newGrid = createEmptyGrid(rows, cols);
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const pixelIndex = (r * cols + c) * 4;
+        const red = imageData.data[pixelIndex];
+        const green = imageData.data[pixelIndex + 1];
+        const blue = imageData.data[pixelIndex + 2];
+        const alpha = imageData.data[pixelIndex + 3];
+
+        if (alpha < 128) {
+          newGrid[r][c] = 0;
+        } else {
+          const rgb = `#${red.toString(16).padStart(2, '0')}${green.toString(16).padStart(2, '0')}${blue.toString(16).padStart(2, '0')}`;
+          let closestColorIndex = 1;
+          let minDistance = Infinity;
+
+          for (let i = 1; i < palette.length; i++) {
+            const paletteColor = palette[i];
+            const pRed = parseInt(paletteColor.slice(1, 3), 16);
+            const pGreen = parseInt(paletteColor.slice(3, 5), 16);
+            const pBlue = parseInt(paletteColor.slice(5, 7), 16);
+            
+            const distance = Math.sqrt(
+              Math.pow(red - pRed, 2) + 
+              Math.pow(green - pGreen, 2) + 
+              Math.pow(blue - pBlue, 2)
+            );
+
+            if (distance < minDistance) {
+              minDistance = distance;
+              closestColorIndex = i;
             }
           }
+
+          newGrid[r][c] = closestColorIndex;
         }
       }
-      return ng;
-    });
-  };
-
-  const floodFill = (startR: number, startC: number, newColor: number) => {
-    setGrid(g => {
-      const ng = cloneGrid(g);
-      const originalColor = g[startR][startC];
-      
-      if (originalColor === newColor) return ng;
-      
-      const queue: [number, number][] = [[startR, startC]];
-      const visited = new Set<string>();
-      
-      while (queue.length > 0) {
-        const [r, c] = queue.shift()!;
-        const key = `${r},${c}`;
-        
-        if (r < 0 || r >= rows || c < 0 || c >= cols || visited.has(key)) {
-          continue;
-        }
-        
-        if (ng[r][c] !== originalColor) {
-          continue;
-        }
-        
-        ng[r][c] = newColor;
-        visited.add(key);
-        
-        queue.push([r - 1, c]);
-        queue.push([r + 1, c]);
-        queue.push([r, c - 1]);
-        queue.push([r, c + 1]);
-      }
-      
-      return ng;
-    });
-  };
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    if (isSavingColor) {
-      setIsSavingColor(false);
-      return;
     }
-    
-    const rect = canvas.getBoundingClientRect();
-    const x = Math.floor((e.clientX - rect.left) / cellSize);
-    const y = Math.floor((e.clientY - rect.top) / cellSize);
-    
-    if (tool === 'fill') {
-      floodFill(y, x, selectedColor);
-    } else {
-      isMouseDown.current = true;
-      const colorToUse = tool === 'eraser' ? 0 : selectedColor;
-      paintCell(y, x, colorToUse);
-    }
+
+    setGrid(newGrid);
   };
 
-  const handleMouseUp = () => { 
-    isMouseDown.current = false; 
-  };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isMouseDown.current || tool === 'fill') return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = Math.floor((e.clientX - rect.left) / cellSize);
-    const y = Math.floor((e.clientY - rect.top) / cellSize);
-    
-    const colorToUse = tool === 'eraser' ? 0 : selectedColor;
-    paintCell(y, x, colorToUse);
-  };
+
 
   const clear = () => {
     setGrid(createEmptyGrid(rows, cols));
@@ -1367,13 +1306,9 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
       <div ref={canvasContainerRef} style={{ padding: '10px', display: 'inline-block' }}>
         <canvas
           ref={canvasRef}
-          onMouseDown={handleMouseDown}
-          onMouseUp={handleMouseUp}
-          onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseUp}
           style={{ 
             display: 'block', 
-            cursor: tool === 'fill' ? 'pointer' : 'crosshair', 
+            cursor: 'default', 
             background: backgroundColor 
           }}
         />
@@ -1411,7 +1346,7 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
             alignItems: 'center',
           }}
         >
-          <span>painting-with-roughness</span>
+          <span>Rough Image Generator</span>
           <button
             onClick={() => setPanelMinimized(prev => !prev)}
             style={{
@@ -1444,30 +1379,31 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
             pointerEvents: panelMinimized ? 'none' : 'auto'
           }}>
             
+            <div className="upload-area" onClick={() => document.getElementById('imageUpload')?.click()}>
+              <div className="upload-text">
+                {imageFile ? `Uploaded: ${imageFile.name}` : 'Click to upload an image'}
+              </div>
+              <div className="upload-button">
+                {imageFile ? 'Change Image' : 'Upload Image'}
+              </div>
+              <input
+                id="imageUpload"
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                style={{ display: 'none' }}
+              />
+              {uploadedImage && (
+                <img 
+                  src={uploadedImage.src} 
+                  alt="Preview" 
+                  className="image-preview"
+                />
+              )}
+            </div>
+            
             <div style={{ marginBottom: '12px' }}>
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
-                {[
-                  { label: 'Brush', value: 'brush' },
-                  { label: 'Fill', value: 'fill' },
-                  { label: 'Eraser', value: 'eraser' }
-                ].map(({ label, value }) => (
-                  <button
-                    key={value}
-                    onClick={() => { setTool(value); setIsSavingColor(false); }}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: '6px',
-                      background: tool === value ? '#52525b' : '#3a3a3c',
-                      color: '#fff',
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontWeight: 'normal',
-                      fontSize: '0.95rem'
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
                 <button
                   onClick={() => setShowAutoControls(prev => !prev)}
                   style={{
@@ -1720,9 +1656,7 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
             {showOptions && showStepControls && (
               <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexWrap: 'wrap' }}>
                 {[
-                  { label: 'Spread Once', onClick: colorSpread },
-                  { label: 'Add Dots', onClick: addRandomDots },
-                  { label: 'Add Shapes', onClick: addRandomShapes }
+                  { label: 'Spread Once', onClick: colorSpread }
                 ].map(({ label, onClick }) => (
                   <button
                     key={label}
@@ -1798,7 +1732,6 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
       Canvas Settings
     </label>
     {[
-      ['Brush Size', brushSize, 1, 100, 1, setBrushSize, ''],
       ['Cell Size', cellSize, 1, 30, 1, setCellSize, ' px'],
       ['Rows', rows, 10, 2000, 1, handleRowsChange, ''],
       ['Cols', cols, 10, 2000, 1, handleColsChange, '']
@@ -2246,34 +2179,6 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
               <>
                 <div style={{ marginBottom: '10px' }}>
                   
-        <div style={{ marginBottom: '12px' }}> {/* BRUSH PATCH */}
-          <label style={{ fontSize: '0.9rem', fontWeight: 500, display: 'block', marginBottom: '6px' }}>Brush Type</label>
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-            {(['square', 'circle', 'diagonal', 'spray'] as BrushType[]).map(type => (
-              <button
-                key={type}
-                onClick={() => setBrushType(type)}
-                style={{ padding: '6px 12px', borderRadius: '6px', background: brushType === type ? '#8b5cf6' : '#3a3a3c', color: '#fff', border: 'none', cursor: 'pointer' }}
-              >
-                {type.charAt(0).toUpperCase() + type.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        
-        {brushType === 'spray' && (
-          <div style={{ marginBottom: '10px' }}> {/* BRUSH PATCH */}
-            <label style={{ fontWeight: 600, marginBottom: '6px', display: 'block' }}>Spray Density: {sprayDensity.toFixed(2)}</label>
-            <input type="range" step={0.05} min={0.05} max={1} value={sprayDensity} onChange={e => setSprayDensity(Number(e.target.value))} />
-          </div>
-        )}
-        {brushType === 'diagonal' && (
-          <div style={{ marginBottom: '10px' }}> {/* BRUSH PATCH */}
-            <label style={{ fontWeight: 600, marginBottom: '6px', display: 'block' }}>Diagonal Thickness: {diagonalThickness}</label>
-            <input type="range" min={1} max={100} value={diagonalThickness} onChange={e => setDiagonalThickness(Number(e.target.value))} />
-          </div>
-        )}
 <label style={{ fontWeight: 600, marginBottom: '6px', display: 'block' }}>Blend Mode:</label>
                   <select
                     value={blendMode}
