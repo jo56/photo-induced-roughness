@@ -114,6 +114,10 @@ export default function RoughImageGenerator(): JSX.Element {
   const [selectedColor, setSelectedColor] = useState(defaults.selectedColor);
   const [uploadedImage, setUploadedImage] = useState<HTMLImageElement | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [showImageControls, setShowImageControls] = useState(false);
+  const [imageOffsetX, setImageOffsetX] = useState(0);
+  const [imageOffsetY, setImageOffsetY] = useState(0);
+  const [imageScale, setImageScale] = useState(1);
   const [spreadProbability, setSpreadProbability] = useState(defaults.spreadProbability);
   const [autoSpreadSpeed, setAutoSpreadSpeed] = useState(defaults.autoSpreadSpeed);
   const [autoSpreading, setAutoSpreading] = useState(false);
@@ -374,10 +378,28 @@ export default function RoughImageGenerator(): JSX.Element {
 
     canvas.width = cols;
     canvas.height = rows;
-    ctx.drawImage(img, 0, 0, cols, rows);
+    
+    // Apply crop/move transformations
+    const sourceX = imageOffsetX;
+    const sourceY = imageOffsetY;
+    const sourceWidth = img.width / imageScale;
+    const sourceHeight = img.height / imageScale;
+    
+    ctx.drawImage(
+      img,
+      sourceX, sourceY, sourceWidth, sourceHeight,
+      0, 0, cols, rows
+    );
     
     const imageData = ctx.getImageData(0, 0, cols, rows);
     const newGrid = createEmptyGrid(rows, cols);
+    const newPalette = [...palette];
+    const colorMap = new Map<string, number>();
+
+    // Initialize existing palette colors in the map
+    for (let i = 0; i < palette.length; i++) {
+      colorMap.set(palette[i].toLowerCase(), i);
+    }
 
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
@@ -391,33 +413,40 @@ export default function RoughImageGenerator(): JSX.Element {
           newGrid[r][c] = 0;
         } else {
           const rgb = `#${red.toString(16).padStart(2, '0')}${green.toString(16).padStart(2, '0')}${blue.toString(16).padStart(2, '0')}`;
-          let closestColorIndex = 1;
-          let minDistance = Infinity;
-
-          for (let i = 1; i < palette.length; i++) {
-            const paletteColor = palette[i];
-            const pRed = parseInt(paletteColor.slice(1, 3), 16);
-            const pGreen = parseInt(paletteColor.slice(3, 5), 16);
-            const pBlue = parseInt(paletteColor.slice(5, 7), 16);
-            
-            const distance = Math.sqrt(
-              Math.pow(red - pRed, 2) + 
-              Math.pow(green - pGreen, 2) + 
-              Math.pow(blue - pBlue, 2)
-            );
-
-            if (distance < minDistance) {
-              minDistance = distance;
-              closestColorIndex = i;
-            }
+          
+          // Check if this exact color already exists
+          let colorIndex = colorMap.get(rgb.toLowerCase());
+          
+          if (colorIndex === undefined) {
+            // Color doesn't exist, add it to the palette
+            colorIndex = newPalette.length;
+            newPalette.push(rgb);
+            colorMap.set(rgb.toLowerCase(), colorIndex);
           }
 
-          newGrid[r][c] = closestColorIndex;
+          newGrid[r][c] = colorIndex;
         }
       }
     }
 
+    setPalette(newPalette);
     setGrid(newGrid);
+    setShowImageControls(true);
+  };
+
+  const reprocessImage = () => {
+    if (uploadedImage) {
+      convertImageToGrid(uploadedImage);
+    }
+  };
+
+  const resetImageTransform = () => {
+    setImageOffsetX(0);
+    setImageOffsetY(0);
+    setImageScale(1);
+    if (uploadedImage) {
+      convertImageToGrid(uploadedImage);
+    }
   };
 
 
@@ -1401,6 +1430,113 @@ export default function RoughImageGenerator(): JSX.Element {
                 />
               )}
             </div>
+            
+            {showImageControls && (
+              <div style={{ 
+                background: '#1a1a1a', 
+                padding: '12px', 
+                borderRadius: '8px', 
+                marginTop: '8px',
+                border: '1px solid #333'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <h4 style={{ margin: 0, color: '#fff', fontSize: '14px' }}>Image Positioning</h4>
+                  <button
+                    onClick={() => setShowImageControls(false)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#888',
+                      cursor: 'pointer',
+                      fontSize: '18px'
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+                
+                <div style={{ display: 'grid', gap: '8px' }}>
+                  <div>
+                    <label style={{ color: '#ccc', fontSize: '12px', display: 'block', marginBottom: '4px' }}>
+                      X Offset: {imageOffsetX}px
+                    </label>
+                    <input
+                      type="range"
+                      min={-uploadedImage.width}
+                      max={uploadedImage.width}
+                      value={imageOffsetX}
+                      onChange={(e) => setImageOffsetX(Number(e.target.value))}
+                      onInput={reprocessImage}
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label style={{ color: '#ccc', fontSize: '12px', display: 'block', marginBottom: '4px' }}>
+                      Y Offset: {imageOffsetY}px
+                    </label>
+                    <input
+                      type="range"
+                      min={-uploadedImage.height}
+                      max={uploadedImage.height}
+                      value={imageOffsetY}
+                      onChange={(e) => setImageOffsetY(Number(e.target.value))}
+                      onInput={reprocessImage}
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label style={{ color: '#ccc', fontSize: '12px', display: 'block', marginBottom: '4px' }}>
+                      Scale: {imageScale.toFixed(2)}x
+                    </label>
+                    <input
+                      type="range"
+                      min="0.1"
+                      max="5"
+                      step="0.1"
+                      value={imageScale}
+                      onChange={(e) => setImageScale(Number(e.target.value))}
+                      onInput={reprocessImage}
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                  
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                    <button
+                      onClick={resetImageTransform}
+                      style={{
+                        flex: 1,
+                        padding: '6px 12px',
+                        background: '#444',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                      }}
+                    >
+                      Reset
+                    </button>
+                    <button
+                      onClick={reprocessImage}
+                      style={{
+                        flex: 1,
+                        padding: '6px 12px',
+                        background: '#0066cc',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                      }}
+                    >
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
             
             <div style={{ marginBottom: '12px' }}>
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
