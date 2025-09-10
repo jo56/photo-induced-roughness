@@ -114,10 +114,6 @@ export default function RoughImageGenerator(): JSX.Element {
   const [selectedColor, setSelectedColor] = useState(defaults.selectedColor);
   const [uploadedImage, setUploadedImage] = useState<HTMLImageElement | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [showImageControls, setShowImageControls] = useState(false);
-  const [imageOffsetX, setImageOffsetX] = useState(0);
-  const [imageOffsetY, setImageOffsetY] = useState(0);
-  const [imageScale, setImageScale] = useState(1);
   const [spreadProbability, setSpreadProbability] = useState(defaults.spreadProbability);
   const [autoSpreadSpeed, setAutoSpreadSpeed] = useState(defaults.autoSpreadSpeed);
   const [autoSpreading, setAutoSpreading] = useState(false);
@@ -376,23 +372,18 @@ export default function RoughImageGenerator(): JSX.Element {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    canvas.width = cols;
-    canvas.height = rows;
+    // Use image dimensions directly for 1:1 pixel mapping
+    const imageWidth = img.width;
+    const imageHeight = img.height;
     
-    // Apply crop/move transformations
-    const sourceX = imageOffsetX;
-    const sourceY = imageOffsetY;
-    const sourceWidth = img.width / imageScale;
-    const sourceHeight = img.height / imageScale;
+    canvas.width = imageWidth;
+    canvas.height = imageHeight;
     
-    ctx.drawImage(
-      img,
-      sourceX, sourceY, sourceWidth, sourceHeight,
-      0, 0, cols, rows
-    );
+    // Draw image at original size for exact pixel mapping
+    ctx.drawImage(img, 0, 0);
     
-    const imageData = ctx.getImageData(0, 0, cols, rows);
-    const newGrid = createEmptyGrid(rows, cols);
+    const imageData = ctx.getImageData(0, 0, imageWidth, imageHeight);
+    const newGrid = createEmptyGrid(imageHeight, imageWidth);
     const newPalette = [...palette];
     const colorMap = new Map<string, number>();
 
@@ -401,9 +392,9 @@ export default function RoughImageGenerator(): JSX.Element {
       colorMap.set(palette[i].toLowerCase(), i);
     }
 
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const pixelIndex = (r * cols + c) * 4;
+    for (let r = 0; r < imageHeight; r++) {
+      for (let c = 0; c < imageWidth; c++) {
+        const pixelIndex = (r * imageWidth + c) * 4;
         const red = imageData.data[pixelIndex];
         const green = imageData.data[pixelIndex + 1];
         const blue = imageData.data[pixelIndex + 2];
@@ -429,25 +420,13 @@ export default function RoughImageGenerator(): JSX.Element {
       }
     }
 
+    // Update grid dimensions to match image
+    setRows(imageHeight);
+    setCols(imageWidth);
     setPalette(newPalette);
     setGrid(newGrid);
-    setShowImageControls(true);
   };
 
-  const reprocessImage = () => {
-    if (uploadedImage) {
-      convertImageToGrid(uploadedImage);
-    }
-  };
-
-  const resetImageTransform = () => {
-    setImageOffsetX(0);
-    setImageOffsetY(0);
-    setImageScale(1);
-    if (uploadedImage) {
-      convertImageToGrid(uploadedImage);
-    }
-  };
 
 
 
@@ -1431,112 +1410,6 @@ export default function RoughImageGenerator(): JSX.Element {
               )}
             </div>
             
-            {showImageControls && (
-              <div style={{ 
-                background: '#1a1a1a', 
-                padding: '12px', 
-                borderRadius: '8px', 
-                marginTop: '8px',
-                border: '1px solid #333'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <h4 style={{ margin: 0, color: '#fff', fontSize: '14px' }}>Image Positioning</h4>
-                  <button
-                    onClick={() => setShowImageControls(false)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#888',
-                      cursor: 'pointer',
-                      fontSize: '18px'
-                    }}
-                  >
-                    ×
-                  </button>
-                </div>
-                
-                <div style={{ display: 'grid', gap: '8px' }}>
-                  <div>
-                    <label style={{ color: '#ccc', fontSize: '12px', display: 'block', marginBottom: '4px' }}>
-                      X Offset: {imageOffsetX}px
-                    </label>
-                    <input
-                      type="range"
-                      min={-uploadedImage.width}
-                      max={uploadedImage.width}
-                      value={imageOffsetX}
-                      onChange={(e) => setImageOffsetX(Number(e.target.value))}
-                      onInput={reprocessImage}
-                      style={{ width: '100%' }}
-                    />
-                  </div>
-                  
-                  <div>
-                    <label style={{ color: '#ccc', fontSize: '12px', display: 'block', marginBottom: '4px' }}>
-                      Y Offset: {imageOffsetY}px
-                    </label>
-                    <input
-                      type="range"
-                      min={-uploadedImage.height}
-                      max={uploadedImage.height}
-                      value={imageOffsetY}
-                      onChange={(e) => setImageOffsetY(Number(e.target.value))}
-                      onInput={reprocessImage}
-                      style={{ width: '100%' }}
-                    />
-                  </div>
-                  
-                  <div>
-                    <label style={{ color: '#ccc', fontSize: '12px', display: 'block', marginBottom: '4px' }}>
-                      Scale: {imageScale.toFixed(2)}x
-                    </label>
-                    <input
-                      type="range"
-                      min="0.1"
-                      max="5"
-                      step="0.1"
-                      value={imageScale}
-                      onChange={(e) => setImageScale(Number(e.target.value))}
-                      onInput={reprocessImage}
-                      style={{ width: '100%' }}
-                    />
-                  </div>
-                  
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                    <button
-                      onClick={resetImageTransform}
-                      style={{
-                        flex: 1,
-                        padding: '6px 12px',
-                        background: '#444',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '12px'
-                      }}
-                    >
-                      Reset
-                    </button>
-                    <button
-                      onClick={reprocessImage}
-                      style={{
-                        flex: 1,
-                        padding: '6px 12px',
-                        background: '#0066cc',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '12px'
-                      }}
-                    >
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
             
             <div style={{ marginBottom: '12px' }}>
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -1589,110 +1462,6 @@ export default function RoughImageGenerator(): JSX.Element {
             </div>
 
 
-            <div style={{ marginBottom: '12px' }}>
-              <div style={{ 
-                maxHeight: '120px', 
-                overflowY: palette.length > 20 ? 'auto' : 'visible',
-                background: palette.length > 20 ? '#1a1a1a' : 'transparent',
-                padding: palette.length > 20 ? '8px' : '0',
-                borderRadius: palette.length > 20 ? '8px' : '0',
-                border: palette.length > 20 ? '1px solid #333' : 'none'
-              }}>
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-                  {palette.slice(1).map((color, index) => (
-                    <button
-                        key={index + 1}
-                        onClick={() => handlePaletteClick(index + 1)}
-                        title={isSavingColor ? `Save ${customColor} to this slot` : `Select ${color}`}
-                        style={{
-                        width: '32px',
-                        height: '32px',
-                        background: color,
-                        border: selectedColor === index + 1 ? '3px solid #fff' : '1px solid #666',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        outline: isSavingColor ? '2px dashed #54a0ff' : 'none',
-                        outlineOffset: '2px',
-                        transition: 'outline 0.2s',
-                        flexShrink: 0
-                        }}
-                    />
-                  ))}
-                </div>
-              </div>
-              
-              <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '8px' }}>
-                {palette.length > 20 && (
-                  <div style={{ 
-                    color: '#888', 
-                    fontSize: '11px',
-                    flex: 1
-                  }}>
-                    {palette.length - 1} colors (scroll to see all)
-                  </div>
-                )}
-
-                <div style={{ marginLeft: palette.length > 20 ? '0' : 'auto', display: 'flex', gap: '6px', alignItems: 'center' }}>
-                  <div
-                    style={{
-                      position: 'relative',
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '6px',
-                      border: selectedColor === palette.length ? '3px solid #fff' : '1px solid #666',
-                      background: customColor,
-                      cursor: 'pointer',
-                      overflow: 'hidden'
-                    }}
-                    onClick={() => {
-                        const colorInput = panelRef.current?.querySelector('input[type="color"]') as HTMLInputElement;
-                        if (colorInput) {
-                            colorInput.click();
-                        }
-                        setSelectedColor(palette.length);
-                        setIsSavingColor(false);
-                    }}
-                  >
-                    <input
-                      type="color"
-                      value={customColor}
-                      onChange={(e) => setCustomColor(e.target.value)}
-                      style={{
-                        position: 'absolute',
-                        top: '-10px',
-                        left: '-10px',
-                        width: '52px',
-                        height: '52px',
-                        border: 'none',
-                        cursor: 'pointer',
-                      }}
-                    />
-                  </div>
-                  <button
-                    onClick={() => setIsSavingColor(prev => !prev)}
-                    title={isSavingColor ? "Cancel saving" : "Save this color to a slot"}
-                    style={{
-                        visibility: selectedColor === palette.length ? 'visible' : 'hidden',
-                        padding: '6px 0',
-                        height: '32px',
-                        borderRadius: '6px',
-                        background: isSavingColor ? '#54a0ff' : '#3a3a3c',
-                        color: '#fff',
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontSize: '0.95rem',
-                        fontWeight: 'normal',
-                        whiteSpace: 'nowrap',
-                        minWidth: '75px',
-                        textAlign: 'center'
-                    }}
-                  >
-                    {isSavingColor ? 'Cancel' : 'Save'}
-                  </button>
-                </div>
-              </div>
-              {isSavingColor && <div style={{fontSize: '0.8rem', color: '#9ca3af', marginTop: '6px'}}>Select a color slot to replace it.</div>}
-            </div>
 
             {showAutoControls && (
               <>
