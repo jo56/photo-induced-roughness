@@ -1,0 +1,2322 @@
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+
+const GRID_COLOR = '#27272a';
+
+function createEmptyGrid(rows: number, cols: number): number[][] {
+  const g: number[][] = [];
+  for (let r = 0; r < rows; r++) {
+    g[r] = new Array(cols).fill(0);
+  }
+  return g;
+}
+
+function cloneGrid(grid: number[][]): number[][] {
+  return grid.map(row => [...row]);
+}
+
+function RuleEditor({ label, rules, onChange }: { label: string, rules: number[], onChange: (rules: number[]) => void }) {
+    const numbers = [1, 2, 3, 4, 5, 6, 7, 8];
+
+    const handleToggle = (num: number) => {
+        const newRules = rules.includes(num)
+            ? rules.filter(r => r !== num)
+            : [...rules, num];
+        onChange(newRules.sort((a, b) => a - b));
+    };
+
+    return (
+        <div style={{ marginBottom: '8px' }}>
+            <label style={{ fontSize: '0.85rem', fontWeight: 500, display: 'block', marginBottom: '4px' }}>{label}:</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                {numbers.map(num => (
+                    <label key={num} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', background: '#404040', padding: '4px 8px', borderRadius: '4px', userSelect: 'none' }}>
+                        <input
+                            type="checkbox"
+                            checked={rules.includes(num)}
+                            onChange={() => handleToggle(num)}
+                            style={{ marginRight: '6px', cursor: 'pointer' }}
+                        />
+                        {num}
+                    </label>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+type Direction = 'up' | 'down' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+type SpreadPattern = 'random' | 'conway' | 'pulse' | 'directional' | 'tendrils' | 'vein' | 'crystallize' | 'erosion' | 'flow' | 'jitter' | 'vortex' | 'strobe' | 'scramble' | 'ripple';
+
+type BrushType = 'square' | 'circle' | 'diagonal' | 'spray'; // BRUSH PATCH
+
+
+export default function ModularSettingsPaintStudio(): JSX.Element {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const canvasContainerRef = useRef<HTMLDivElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const isMouseDown = useRef(false);
+  const rafRef = useRef<number | null>(null);
+  const runningRef = useRef(false);
+  const autoDotsRef = useRef<number | null>(null);
+  const autoShapesRef = useRef<number | null>(null);
+  const dotsRunningRef = useRef(false);
+  const shapesRunningRef = useRef(false);
+  const pressedKeys = useRef(new Set<string>());
+  const walkers = useRef<{r: number, c: number, color: number}[]>([]);
+  const strobeStateRef = useRef(true); // true: expand, false: contract
+  const ripplesRef = useRef<{r: number, c: number, color: number, radius: number, maxRadius: number}[]>([]);
+
+  const defaults = {
+    cellSize: 10,
+    rows: 100,
+    cols: 165,
+    showGrid: false,
+    backgroundColor: '#0a0a0a',
+    brushSize: 2,
+    selectedColor: 1,
+    spreadProbability: 0.2,
+    autoSpreadSpeed: 3,
+    autoDotsSpeed: 2,
+    autoShapesSpeed: 1,
+    blendMode: 'replace',
+    spreadPattern: 'random' as SpreadPattern,
+    pulseSpeed: 10,
+    pulseOvertakes: true,
+    pulseDirection: 'bottom-right' as Direction,
+    directionalBias: 'down' as Direction,
+    conwayRules: { born: [3], survive: [2,3] },
+    tendrilsRules: { born: [1], survive: [1,2] },
+    directionalBiasStrength: 0.8,
+    randomWalkSpreadCount: 1,
+    randomWalkMode: 'any' as const,
+    veinSeekStrength: 0.5,
+    veinBranchChance: 0.1,
+    crystallizeThreshold: 2,
+    erosionRate: 0.5,
+    erosionSolidity: 3,
+    flowDirection: 'down' as Direction,
+    flowChance: 0.5,
+    jitterChance: 0.3,
+    vortexCount: 5,
+    strobeExpandThreshold: 2,
+    strobeContractThreshold: 3,
+    scrambleSwaps: 10,
+    rippleChance: 0.05,
+  };
+
+  const [palette, setPalette] = useState([
+    '#000000', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', 
+    '#feca57', '#ff9ff3', '#54a0ff', '#5f27cd'
+  ]);
+
+  const [cellSize, setCellSize] = useState(defaults.cellSize);
+  const [rows, setRows] = useState(defaults.rows);
+  const [cols, setCols] = useState(defaults.cols);
+  const [grid, setGrid] = useState<number[][]>(() => createEmptyGrid(defaults.rows, defaults.cols));
+  const [showGrid, setShowGrid] = useState(defaults.showGrid);
+  const [backgroundColor, setBackgroundColor] = useState(defaults.backgroundColor);
+  const [brushSize, setBrushSize] = useState(defaults.brushSize);
+  const [selectedColor, setSelectedColor] = useState(defaults.selectedColor);
+  const [spreadProbability, setSpreadProbability] = useState(defaults.spreadProbability);
+  const [autoSpreadSpeed, setAutoSpreadSpeed] = useState(defaults.autoSpreadSpeed);
+  const [autoDotsSpeed, setAutoDotsSpeed] = useState(defaults.autoDotsSpeed);
+  const [autoShapesSpeed, setAutoShapesSpeed] = useState(defaults.autoShapesSpeed);
+  const [autoSpreading, setAutoSpreading] = useState(false);
+  const [autoDots, setAutoDots] = useState(false);
+  const [autoShapes, setAutoShapes] = useState(false);
+  const [autoSpreadEnabled, setAutoSpreadEnabled] = useState(true);
+  const [autoDotsEnabled, setAutoDotsEnabled] = useState(true);
+  const [autoShapesEnabled, setAutoShapesEnabled] = useState(true);
+  const [blendMode, setBlendMode] = useState(defaults.blendMode);
+  const [tool, setTool] = useState('brush');
+  const [brushType, setBrushType] = useState<BrushType>('square');
+    const [sprayDensity, setSprayDensity] = useState(0.3); // BRUSH PATCH
+  const [diagonalThickness, setDiagonalThickness] = useState(1);
+  const brushTypeRef = useRef<BrushType>('square'); // BRUSH PATCH
+    const sprayDensityRef = useRef(sprayDensity); // BRUSH PATCH
+  const diagonalThicknessRef = useRef(diagonalThickness); // BRUSH PATCH
+
+  useEffect(() => { brushTypeRef.current = brushType; }, [brushType]); // BRUSH PATCH
+    useEffect(() => { sprayDensityRef.current = sprayDensity; }, [sprayDensity]); // BRUSH PATCH
+  useEffect(() => { diagonalThicknessRef.current = diagonalThickness; }, [diagonalThickness]); // BRUSH PATCH
+ // BRUSH PATCH
+ // BRUSH PATCH
+  const [panelMinimized, setPanelMinimized] = useState(false);
+  const [showSpeedSettings, setShowSpeedSettings] = useState(false);
+  const [showCanvasSettings, setShowCanvasSettings] = useState(false);
+  const [showVisualSettings, setShowVisualSettings] = useState(false);
+  const [showGenerativeSettings, setShowGenerativeSettings] = useState(false);
+  const [showStepControls, setShowStepControls] = useState(false);
+  const [showAutoControls, setShowAutoControls] = useState(true);
+  const [showOptions, setShowOptions] = useState(true);
+  const [customColor, setCustomColor] = useState('#ffffff');
+  const [isSavingColor, setIsSavingColor] = useState(false);
+  const [generativeColorIndices, setGenerativeColorIndices] = useState(() => palette.slice(1).map((_, index) => index + 1));
+  const [spreadPattern, setSpreadPattern] = useState<SpreadPattern>(defaults.spreadPattern);
+  const [pulseSpeed, setPulseSpeed] = useState(defaults.pulseSpeed);
+  const [directionalBias, setDirectionalBias] = useState<'none' | Direction>(defaults.directionalBias);
+  const [conwayRules, setConwayRules] = useState(defaults.conwayRules);
+  const [tendrilsRules, setTendrilsRules] = useState(defaults.tendrilsRules);
+  const [directionalBiasStrength, setDirectionalBiasStrength] = useState(defaults.directionalBiasStrength);
+  const [pulseOvertakes, setPulseOvertakes] = useState(defaults.pulseOvertakes);
+  const [pulseDirection, setPulseDirection] = useState<Direction>(defaults.pulseDirection);
+  const [randomWalkSpreadCount, setRandomWalkSpreadCount] = useState(defaults.randomWalkSpreadCount);
+  const [randomWalkMode, setRandomWalkMode] = useState<'any' | 'cardinal'>(defaults.randomWalkMode);
+  const [veinSeekStrength, setVeinSeekStrength] = useState(defaults.veinSeekStrength);
+  const [veinBranchChance, setVeinBranchChance] = useState(defaults.veinBranchChance);
+  const [crystallizeThreshold, setCrystallizeThreshold] = useState(defaults.crystallizeThreshold);
+  const [erosionRate, setErosionRate] = useState(defaults.erosionRate);
+  const [erosionSolidity, setErosionSolidity] = useState(defaults.erosionSolidity);
+  const [flowDirection, setFlowDirection] = useState<Direction>(defaults.flowDirection);
+  const [flowChance, setFlowChance] = useState(defaults.flowChance);
+  const [jitterChance, setJitterChance] = useState(defaults.jitterChance);
+  const [vortexCount, setVortexCount] = useState(defaults.vortexCount);
+  const [strobeExpandThreshold, setStrobeExpandThreshold] = useState(defaults.strobeExpandThreshold);
+  const [strobeContractThreshold, setStrobeContractThreshold] = useState(defaults.strobeContractThreshold);
+  const [scrambleSwaps, setScrambleSwaps] = useState(defaults.scrambleSwaps);
+  const [rippleChance, setRippleChance] = useState(defaults.rippleChance);
+
+  const generativeColorIndicesRef = useRef(generativeColorIndices);
+  const spreadProbabilityRef = useRef(spreadProbability);
+  const autoSpreadSpeedRef = useRef(autoSpreadSpeed);
+  const autoDotsSpeedRef = useRef(autoDotsSpeed);
+  const autoShapesSpeedRef = useRef(autoShapesSpeed);
+  const rowsRef = useRef(rows);
+  const colsRef = useRef(cols);
+  const spreadPatternRef = useRef(spreadPattern);
+  const pulseSpeedRef = useRef(pulseSpeed);
+  const directionalBiasRef = useRef(directionalBias);
+  const conwayRulesRef = useRef(conwayRules);
+  const tendrilsRulesRef = useRef(tendrilsRules);
+  const directionalBiasStrengthRef = useRef(directionalBiasStrength);
+  const pulseOvertakesRef = useRef(pulseOvertakes);
+  const pulseDirectionRef = useRef(pulseDirection);
+  const randomWalkSpreadCountRef = useRef(randomWalkSpreadCount);
+  const randomWalkModeRef = useRef(randomWalkMode);
+  const veinSeekStrengthRef = useRef(veinSeekStrength);
+  const veinBranchChanceRef = useRef(veinBranchChance);
+  const crystallizeThresholdRef = useRef(crystallizeThreshold);
+  const erosionRateRef = useRef(erosionRate);
+  const erosionSolidityRef = useRef(erosionSolidity);
+  const flowDirectionRef = useRef(flowDirection);
+  const flowChanceRef = useRef(flowChance);
+  const jitterChanceRef = useRef(jitterChance);
+  const vortexCountRef = useRef(vortexCount);
+  const strobeExpandThresholdRef = useRef(strobeExpandThreshold);
+  const strobeContractThresholdRef = useRef(strobeContractThreshold);
+  const scrambleSwapsRef = useRef(scrambleSwaps);
+  const rippleChanceRef = useRef(rippleChance);
+  
+  useEffect(() => { spreadProbabilityRef.current = spreadProbability; }, [spreadProbability]);
+  useEffect(() => { autoSpreadSpeedRef.current = autoSpreadSpeed; }, [autoSpreadSpeed]);
+  useEffect(() => { autoDotsSpeedRef.current = autoDotsSpeed; }, [autoDotsSpeed]);
+  useEffect(() => { autoShapesSpeedRef.current = autoShapesSpeed; }, [autoShapesSpeed]);
+  useEffect(() => { generativeColorIndicesRef.current = generativeColorIndices; }, [generativeColorIndices]);
+  useEffect(() => { rowsRef.current = rows; }, [rows]);
+  useEffect(() => { colsRef.current = cols; }, [cols]);
+  useEffect(() => { spreadPatternRef.current = spreadPattern; }, [spreadPattern]);
+  useEffect(() => { pulseSpeedRef.current = pulseSpeed; }, [pulseSpeed]);
+  useEffect(() => { directionalBiasRef.current = directionalBias; }, [directionalBias]);
+  useEffect(() => { conwayRulesRef.current = conwayRules; }, [conwayRules]);
+  useEffect(() => { tendrilsRulesRef.current = tendrilsRules; }, [tendrilsRules]);
+  useEffect(() => { directionalBiasStrengthRef.current = directionalBiasStrength; }, [directionalBiasStrength]);
+  useEffect(() => { pulseOvertakesRef.current = pulseOvertakes; }, [pulseOvertakes]);
+  useEffect(() => { pulseDirectionRef.current = pulseDirection; }, [pulseDirection]);
+  useEffect(() => { randomWalkSpreadCountRef.current = randomWalkSpreadCount; }, [randomWalkSpreadCount]);
+  useEffect(() => { randomWalkModeRef.current = randomWalkMode; }, [randomWalkMode]);
+  useEffect(() => { veinSeekStrengthRef.current = veinSeekStrength; }, [veinSeekStrength]);
+  useEffect(() => { veinBranchChanceRef.current = veinBranchChance; }, [veinBranchChance]);
+  useEffect(() => { crystallizeThresholdRef.current = crystallizeThreshold; }, [crystallizeThreshold]);
+  useEffect(() => { erosionRateRef.current = erosionRate; }, [erosionRate]);
+  useEffect(() => { erosionSolidityRef.current = erosionSolidity; }, [erosionSolidity]);
+  useEffect(() => { flowDirectionRef.current = flowDirection; }, [flowDirection]);
+  useEffect(() => { flowChanceRef.current = flowChance; }, [flowChance]);
+  useEffect(() => { jitterChanceRef.current = jitterChance; }, [jitterChance]);
+  useEffect(() => { vortexCountRef.current = vortexCount; }, [vortexCount]);
+  useEffect(() => { strobeExpandThresholdRef.current = strobeExpandThreshold; }, [strobeExpandThreshold]);
+  useEffect(() => { strobeContractThresholdRef.current = strobeContractThreshold; }, [strobeContractThreshold]);
+  useEffect(() => { scrambleSwapsRef.current = scrambleSwaps; }, [scrambleSwaps]);
+  useEffect(() => { rippleChanceRef.current = rippleChance; }, [rippleChance]);
+
+
+  const isDragging = useRef(false);
+  const dragOffset = useRef({ x: 0, y: 0 });
+  const [panelPos, setPanelPos] = useState(() => {
+  if (typeof window !== 'undefined') {
+    return { x: 24, y: 20 };
+  }
+  return { x: 20, y: 20 };
+});
+  const mousePos = useRef({ x: 0, y: 0 });
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 800;
+      setIsMobile(mobile);
+      if (!mobile && canvasContainerRef.current) {
+        const rect = canvasContainerRef.current.getBoundingClientRect();
+        setPanelPos(prev => ({ x: 24, y: prev.y }));
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    const updateDirection = () => {
+        let newDirection: Direction | null = null;
+        const keys = pressedKeys.current;
+
+        if (keys.has('KeyW') && keys.has('KeyA')) newDirection = 'top-left';
+        else if (keys.has('KeyW') && keys.has('KeyD')) newDirection = 'top-right';
+        else if (keys.has('KeyS') && keys.has('KeyA')) newDirection = 'bottom-left';
+        else if (keys.has('KeyS') && keys.has('KeyD')) newDirection = 'bottom-right';
+        else if (keys.has('KeyW')) newDirection = 'up';
+        else if (keys.has('KeyS')) newDirection = 'down';
+        else if (keys.has('KeyA')) newDirection = 'left';
+        else if (keys.has('KeyD')) newDirection = 'right';
+        
+        if (newDirection) {
+            const isDiagonal = newDirection.includes('-');
+            const isCardinal = !isDiagonal;
+
+            if (spreadPattern === 'pulse' && isDiagonal) {
+                setPulseDirection(newDirection);
+            } else if (spreadPattern === 'directional') {
+                setDirectionalBias(newDirection);
+            } else if (spreadPattern === 'flow' && isCardinal) {
+                setFlowDirection(newDirection);
+            }
+        }
+    };
+
+    const keyMap: { [key: string]: string } = {
+        'ArrowUp': 'KeyW', 'ArrowDown': 'KeyS', 'ArrowLeft': 'KeyA', 'ArrowRight': 'KeyD'
+    };
+    const relevantCodes = ['KeyW', 'KeyA', 'KeyS', 'KeyD'];
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+        if (!showGenerativeSettings || (spreadPattern !== 'pulse' && spreadPattern !== 'directional' && spreadPattern !== 'flow')) {
+            return;
+        }
+
+        const code = keyMap[e.code] || e.code;
+        if (!relevantCodes.includes(code) || e.repeat) return;
+        
+        e.preventDefault();
+        pressedKeys.current.add(code);
+        updateDirection();
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+        const code = keyMap[e.code] || e.code;
+        if (relevantCodes.includes(code)) {
+            pressedKeys.current.delete(code);
+        }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+        window.removeEventListener('keydown', handleKeyDown);
+        window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [showGenerativeSettings, spreadPattern, setPulseDirection, setDirectionalBias, setFlowDirection]);
+
+  const draw = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d')!;
+    canvas.width = cols * cellSize;
+    canvas.height = rows * cellSize;
+
+    ctx.fillStyle = backgroundColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const colorIndex = grid[r]?.[c];
+        if (colorIndex > 0) {
+          if (colorIndex === palette.length) {
+            ctx.fillStyle = customColor;
+          } else {
+            ctx.fillStyle = palette[colorIndex];
+          }
+          ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+        }
+      }
+    }
+
+    if (showGrid) {
+      ctx.strokeStyle = GRID_COLOR;
+      ctx.lineWidth = 0.5;
+      for (let x = 0; x <= cols * cellSize; x += cellSize) {
+        ctx.beginPath();
+        ctx.moveTo(x + 0.25, 0);
+        ctx.lineTo(x + 0.25, rows * cellSize);
+        ctx.stroke();
+      }
+      for (let y = 0; y <= rows * cellSize; y += cellSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y + 0.25);
+        ctx.lineTo(cols * cellSize, y + 0.25);
+        ctx.stroke();
+      }
+    }
+  }, [grid, rows, cols, cellSize, backgroundColor, showGrid, palette, customColor]);
+
+  useEffect(() => draw(), [draw]);
+
+  const paintCell = (r: number, c: number, color: number) => {
+    if (r < 0 || r >= rows || c < 0 || c >= cols) return;
+    
+    setGrid(g => {
+      const ng = cloneGrid(g);
+      for (let dr = -Math.floor(brushSize/2); dr <= Math.floor(brushSize/2); dr++) {
+        for (let dc = -Math.floor(brushSize/2); dc <= Math.floor(brushSize/2); dc++) {
+          const nr = r + dr;
+          const nc = c + dc;
+          if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
+            let shouldPaint = false; // BRUSH PATCH
+            switch (brushTypeRef.current) { // BRUSH PATCH
+              case 'square':
+                shouldPaint = true;
+                break;
+              case 'circle': {
+  const radius = Math.floor(brushSize / 2);
+  shouldPaint = dr * dr + dc * dc <= radius * radius;
+  break;
+}
+              case 'diagonal':
+                shouldPaint = Math.abs(dr) === Math.abs(dc) && Math.abs(dr) <= diagonalThicknessRef.current;
+                break;
+              case 'spray':
+                shouldPaint = Math.random() < sprayDensityRef.current;
+                break;
+            }
+            if (!shouldPaint) continue;
+
+            if (blendMode === 'replace' || ng[nr][nc] === 0) {
+              ng[nr][nc] = color;
+            } else if (blendMode === 'overlay' && color > 0) {
+              ng[nr][nc] = color;
+            }
+          }
+        }
+      }
+      return ng;
+    });
+  };
+
+  const floodFill = (startR: number, startC: number, newColor: number) => {
+    setGrid(g => {
+      const ng = cloneGrid(g);
+      const originalColor = g[startR][startC];
+      
+      if (originalColor === newColor) return ng;
+      
+      const queue: [number, number][] = [[startR, startC]];
+      const visited = new Set<string>();
+      
+      while (queue.length > 0) {
+        const [r, c] = queue.shift()!;
+        const key = `${r},${c}`;
+        
+        if (r < 0 || r >= rows || c < 0 || c >= cols || visited.has(key)) {
+          continue;
+        }
+        
+        if (ng[r][c] !== originalColor) {
+          continue;
+        }
+        
+        ng[r][c] = newColor;
+        visited.add(key);
+        
+        queue.push([r - 1, c]);
+        queue.push([r + 1, c]);
+        queue.push([r, c - 1]);
+        queue.push([r, c + 1]);
+      }
+      
+      return ng;
+    });
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    if (isSavingColor) {
+      setIsSavingColor(false);
+      return;
+    }
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = Math.floor((e.clientX - rect.left) / cellSize);
+    const y = Math.floor((e.clientY - rect.top) / cellSize);
+    
+    if (tool === 'fill') {
+      floodFill(y, x, selectedColor);
+    } else {
+      isMouseDown.current = true;
+      const colorToUse = tool === 'eraser' ? 0 : selectedColor;
+      paintCell(y, x, colorToUse);
+    }
+  };
+
+  const handleMouseUp = () => { 
+    isMouseDown.current = false; 
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isMouseDown.current || tool === 'fill') return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = Math.floor((e.clientX - rect.left) / cellSize);
+    const y = Math.floor((e.clientY - rect.top) / cellSize);
+    
+    const colorToUse = tool === 'eraser' ? 0 : selectedColor;
+    paintCell(y, x, colorToUse);
+  };
+
+  const clear = () => {
+    setGrid(createEmptyGrid(rows, cols));
+    setIsSavingColor(false);
+  };
+
+  const colorSpread = useCallback(() => {
+    const pattern = spreadPatternRef.current;
+    const currentRows = rowsRef.current;
+    const currentCols = colsRef.current;
+
+    setGrid(g => {
+        let ng = cloneGrid(g);
+
+        switch (pattern) {
+            case 'ripple': {
+                // Update existing ripples
+                ripplesRef.current.forEach(ripple => {
+                    const r = Math.round(ripple.radius);
+                    for (let i = 0; i < 360; i += 5) {
+                        const angle = i * Math.PI / 180;
+                        const nr = Math.round(ripple.r + r * Math.sin(angle));
+                        const nc = Math.round(ripple.c + r * Math.cos(angle));
+                        if (nr >= 0 && nr < currentRows && nc >= 0 && nc < currentCols && ng[nr][nc] === 0) {
+                            ng[nr][nc] = ripple.color;
+                        }
+                    }
+                    ripple.radius += 0.5;
+                });
+                
+                // Filter out old ripples
+                ripplesRef.current = ripplesRef.current.filter(r => r.radius <= r.maxRadius);
+
+                // Create new ripples
+                const chance = rippleChanceRef.current;
+                for (let r = 0; r < currentRows; r++) {
+                    for (let c = 0; c < currentCols; c++) {
+                        if (g[r][c] > 0 && Math.random() < chance) {
+                            ripplesRef.current.push({
+                                r, c, color: g[r][c], radius: 1, maxRadius: Math.max(currentRows, currentCols) / 3
+                            });
+                        }
+                    }
+                }
+                break;
+            }
+            case 'scramble': {
+                const coloredCells: {r: number, c: number, color: number}[] = [];
+                for (let r = 0; r < currentRows; r++) {
+                    for (let c = 0; c < currentCols; c++) {
+                        if (g[r][c] > 0) {
+                            coloredCells.push({r, c, color: g[r][c]});
+                        }
+                    }
+                }
+                if (coloredCells.length < 2) break;
+
+                const swaps = Math.min(scrambleSwapsRef.current, Math.floor(coloredCells.length / 2));
+                for (let i = 0; i < swaps; i++) {
+                    const idx1 = Math.floor(Math.random() * coloredCells.length);
+                    let idx2 = Math.floor(Math.random() * coloredCells.length);
+                    while (idx1 === idx2) {
+                        idx2 = Math.floor(Math.random() * coloredCells.length);
+                    }
+                    const cell1 = coloredCells[idx1];
+                    const cell2 = coloredCells[idx2];
+                    
+                    if (cell1 && cell2) {
+                        const color1 = ng[cell1.r][cell1.c];
+                        const color2 = ng[cell2.r][cell2.c];
+                        ng[cell1.r][cell1.c] = color2;
+                        ng[cell2.r][cell2.c] = color1;
+                    }
+                }
+                break;
+            }
+            case 'vortex': {
+                const count = vortexCountRef.current;
+                for (let i = 0; i < count; i++) {
+                    const r = 1 + Math.floor(Math.random() * (currentRows - 2));
+                    const c = 1 + Math.floor(Math.random() * (currentCols - 2));
+                    
+                    const neighborsCoords = [
+                        [r - 1, c - 1], [r - 1, c], [r - 1, c + 1],
+                        [r, c + 1], [r + 1, c + 1], [r + 1, c],
+                        [r + 1, c - 1], [r, c - 1]
+                    ];
+                    
+                    const originalColors = neighborsCoords.map(([nr, nc]) => g[nr][nc]);
+                    
+                    // Clockwise rotation
+                    neighborsCoords.forEach(([nr, nc], idx) => {
+                        const sourceIndex = (idx + 7) % 8; // (idx - 1 + 8) % 8
+                        ng[nr][nc] = originalColors[sourceIndex];
+                    });
+                }
+                break;
+            }
+            case 'strobe': {
+                strobeStateRef.current = !strobeStateRef.current;
+            
+                if (strobeStateRef.current) { // EXPAND
+                    const expandThreshold = strobeExpandThresholdRef.current;
+                    const locationsToColor = new Map<string, number>();
+                    for (let r = 0; r < currentRows; r++) {
+                        for (let c = 0; c < currentCols; c++) {
+                            if (g[r][c] === 0) {
+                                const neighborColors: number[] = [];
+                                for (let dr = -1; dr <= 1; dr++) {
+                                    for (let dc = -1; dc <= 1; dc++) {
+                                        if (dr === 0 && dc === 0) continue;
+                                        const nr = r + dr, nc = c + dc;
+                                        if (nr >= 0 && nr < currentRows && nc >= 0 && nc < currentCols && g[nr][nc] > 0) {
+                                            neighborColors.push(g[nr][nc]);
+                                        }
+                                    }
+                                }
+            
+                                if (neighborColors.length >= expandThreshold) {
+                                    const colorCounts = neighborColors.reduce((acc, color) => {
+                                        acc[color] = (acc[color] || 0) + 1;
+                                        return acc;
+                                    }, {} as Record<number, number>);
+                                    
+                                    let dominantColor = 0;
+                                    let maxCount = 0;
+                                    for (const color in colorCounts) {
+                                        if (colorCounts[color] > maxCount) {
+                                            maxCount = colorCounts[color];
+                                            dominantColor = parseInt(color);
+                                        }
+                                    }
+                                    if(dominantColor > 0) {
+                                        locationsToColor.set(`${r},${c}`, dominantColor);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    locationsToColor.forEach((color, key) => {
+                        const [r, c] = key.split(',').map(Number);
+                        ng[r][c] = color;
+                    });
+            
+                } else { // CONTRACT
+                    const contractThreshold = strobeContractThresholdRef.current;
+                    for (let r = 0; r < currentRows; r++) {
+                        for (let c = 0; c < currentCols; c++) {
+                            if (g[r][c] > 0) {
+                                let emptyNeighbors = 0;
+                                for (let dr = -1; dr <= 1; dr++) {
+                                    for (let dc = -1; dc <= 1; dc++) {
+                                        if (dr === 0 && dc === 0) continue;
+                                        const nr = r + dr, nc = c + dc;
+                                        if (nr < 0 || nr >= currentRows || nc < 0 || nc >= currentCols || g[nr][nc] === 0) {
+                                            emptyNeighbors++;
+                                        }
+                                    }
+                                }
+                                if (emptyNeighbors >= contractThreshold) {
+                                    ng[r][c] = 0;
+                                }
+                            }
+                        }
+                    }
+                }
+                break;
+            }
+            case 'jitter': {
+                const changes = new Map<string, number>();
+                const empties = new Set<string>();
+                const chance = jitterChanceRef.current;
+
+                for (let r = 0; r < currentRows; r++) {
+                    for (let c = 0; c < currentCols; c++) {
+                        const color = g[r]?.[c];
+                        if (color > 0 && Math.random() < chance) {
+                            const emptyNeighbors = [];
+                            for (let dr = -1; dr <= 1; dr++) {
+                                for (let dc = -1; dc <= 1; dc++) {
+                                    if (dr === 0 && dc === 0) continue;
+                                    const nr = r + dr, nc = c + dc;
+                                    if (nr >= 0 && nr < currentRows && nc >= 0 && nc < currentCols && g[nr][nc] === 0) {
+                                        emptyNeighbors.push({nr, nc});
+                                    }
+                                }
+                            }
+                            if (emptyNeighbors.length > 0) {
+                                const target = emptyNeighbors[Math.floor(Math.random() * emptyNeighbors.length)];
+                                const key = `${target.nr},${target.nc}`;
+                                if (!changes.has(key) && !empties.has(`${r},${c}`)) {
+                                    changes.set(key, color);
+                                    empties.add(`${r},${c}`);
+                                }
+                            }
+                        }
+                    }
+                }
+                 empties.forEach(key => {
+                    const [r, c] = key.split(',').map(Number);
+                    if (!changes.has(key)) ng[r][c] = 0;
+                });
+                changes.forEach((color, key) => {
+                    const [r, c] = key.split(',').map(Number);
+                    ng[r][c] = color;
+                });
+                break;
+            }
+            case 'flow': {
+                const changes = new Map<string, number>();
+                const empties = new Set<string>();
+                const dir = flowDirectionRef.current;
+                const chance = flowChanceRef.current;
+                
+                let r_start = 0, r_end = currentRows, r_inc = 1;
+                let c_start = 0, c_end = currentCols, c_inc = 1;
+        
+                if (dir.includes('down')) { r_start = currentRows - 1; r_end = -1; r_inc = -1; }
+                if (dir.includes('right')) { c_start = currentCols - 1; c_end = -1; c_inc = -1; }
+        
+                for (let r = r_start; r !== r_end; r += r_inc) {
+                    for (let c = c_start; c !== c_end; c += c_inc) {
+                        const color = g[r]?.[c];
+                        if (color > 0 && Math.random() < chance) {
+                            let dr = 0, dc = 0;
+                            if (dir.includes('up')) dr = -1;
+                            if (dir.includes('down')) dr = 1;
+                            if (dir.includes('left')) dc = -1;
+                            if (dir.includes('right')) dc = 1;
+        
+                            const nr = r + dr;
+                            const nc = c + dc;
+        
+                            if (nr >= 0 && nr < currentRows && nc >= 0 && nc < currentCols && g[nr][nc] === 0) {
+                                if (!changes.has(`${nr},${nc}`)) {
+                                    changes.set(`${nr},${nc}`, color);
+                                    empties.add(`${r},${c}`);
+                                }
+                            }
+                        }
+                    }
+                }
+        
+                empties.forEach(key => {
+                    const [r, c] = key.split(',').map(Number);
+                    if (!changes.has(key)) ng[r][c] = 0;
+                });
+                changes.forEach((color, key) => {
+                    const [r, c] = key.split(',').map(Number);
+                    ng[r][c] = color;
+                });
+                break;
+            }
+            case 'vein': {
+                if (walkers.current.length === 0) {
+                    for(let r = 0; r < currentRows; r++) {
+                        for(let c = 0; c < currentCols; c++) {
+                            if(g[r][c] > 0 && Math.random() < 0.1) {
+                                walkers.current.push({r, c, color: g[r][c]});
+                            }
+                        }
+                    }
+                    if (walkers.current.length === 0 && g.flat().some(cell => cell > 0)) {
+                         let r=0, c=0;
+                         while(g[r][c] === 0) { r = Math.floor(Math.random()*currentRows); c = Math.floor(Math.random()*currentCols); }
+                         walkers.current.push({r,c, color: g[r][c]});
+                    }
+                }
+
+                const foodSources: {r: number, c: number}[] = [];
+                 for(let r = 0; r < currentRows; r++) {
+                    for(let c = 0; c < currentCols; c++) {
+                        if (g[r][c] > 0) foodSources.push({r, c});
+                    }
+                }
+
+                walkers.current.forEach(walker => {
+                    let bestDir = { dr: 0, dc: 0 };
+                    let bestDist = Infinity;
+
+                    if (foodSources.length > 0 && Math.random() < veinSeekStrengthRef.current) {
+                        foodSources.forEach(food => {
+                            const dist = Math.hypot(walker.r - food.r, walker.c - food.c);
+                            if (dist < bestDist && dist > 1) {
+                                bestDist = dist;
+                                bestDir = { dr: Math.sign(food.r - walker.r), dc: Math.sign(food.c - walker.c) };
+                            }
+                        });
+                    } else {
+                        bestDir = { dr: Math.floor(Math.random() * 3) - 1, dc: Math.floor(Math.random() * 3) - 1 };
+                    }
+                    
+                    walker.r += bestDir.dr;
+                    walker.c += bestDir.dc;
+                    walker.r = Math.max(0, Math.min(currentRows - 1, walker.r));
+                    walker.c = Math.max(0, Math.min(currentCols - 1, walker.c));
+
+                    const r_int = Math.round(walker.r);
+                    const c_int = Math.round(walker.c);
+                    ng[r_int][c_int] = walker.color;
+                    
+                    if (Math.random() < veinBranchChanceRef.current) {
+                        walkers.current.push({...walker});
+                    }
+                });
+
+                walkers.current = walkers.current.slice(0, 200); // Limit walker count
+                break;
+            }
+            case 'crystallize': {
+                for(let r = 0; r < currentRows; r++) {
+                    for(let c = 0; c < currentCols; c++) {
+                       if (g[r][c] === 0) { // Can only grow into empty space
+                           const neighbors: number[] = [];
+                           for (let dr = -1; dr <= 1; dr++) {
+                               for (let dc = -1; dc <= 1; dc++) {
+                                   if (dr === 0 && dc === 0) continue;
+                                   const nr = r + dr, nc = c + dc;
+                                   if (nr >= 0 && nr < currentRows && nc >= 0 && nc < currentCols && g[nr][nc] > 0) {
+                                       neighbors.push(g[nr][nc]);
+                                   }
+                               }
+                           }
+                           
+                           if (neighbors.length > 0) {
+                               const counts: {[key:number]: number} = {};
+                               neighbors.forEach(n => { counts[n] = (counts[n] || 0) + 1; });
+                               
+                               for(const color in counts) {
+                                   if (counts[color] >= crystallizeThresholdRef.current) {
+                                       ng[r][c] = parseInt(color);
+                                       break;
+                                   }
+                               }
+                           }
+                       }
+                    }
+                }
+                break;
+            }
+            case 'erosion': {
+                for(let r = 0; r < currentRows; r++) {
+                    for(let c = 0; c < currentCols; c++) {
+                        if (g[r][c] > 0 && Math.random() < erosionRateRef.current) {
+                            let emptyNeighbors = 0;
+                            for (let dr = -1; dr <= 1; dr++) {
+                                for (let dc = -1; dc <= 1; dc++) {
+                                    if (dr === 0 && dc === 0) continue;
+                                    const nr = r + dr, nc = c + dc;
+                                    if (nr < 0 || nr >= currentRows || nc < 0 || nc >= currentCols || g[nr][nc] === 0) {
+                                        emptyNeighbors++;
+                                    }
+                                }
+                            }
+                            if (emptyNeighbors >= erosionSolidityRef.current) {
+                                ng[r][c] = 0;
+                            }
+                        }
+                    }
+                }
+                break;
+            }
+            case 'tendrils':
+            case 'conway': {
+                const rules = pattern === 'conway' ? conwayRulesRef.current : tendrilsRulesRef.current;
+                const BORN = rules.born;
+                const SURVIVE = rules.survive;
+                
+                for (let r = 0; r < currentRows; r++) {
+                    for (let c = 0; c < currentCols; c++) {
+                        let liveNeighbors = 0;
+                        const neighborColors: number[] = [];
+                        for (let dr = -1; dr <= 1; dr++) {
+                            for (let dc = -1; dc <= 1; dc++) {
+                                if (dr === 0 && dc === 0) continue;
+                                const nr = r + dr;
+                                const nc = c + dc;
+                                if (nr >= 0 && nr < currentRows && nc >= 0 && nc < currentCols && g[nr]?.[nc] > 0) {
+                                    liveNeighbors++;
+                                    neighborColors.push(g[nr][nc]);
+                                }
+                            }
+                        }
+
+                        const isAlive = g[r]?.[c] > 0;
+                        if (isAlive && !SURVIVE.includes(liveNeighbors)) {
+                            ng[r][c] = 0;
+                        } else if (!isAlive && BORN.includes(liveNeighbors)) {
+                           const colorCounts = neighborColors.reduce((acc, color) => {
+                                acc[color] = (acc[color] || 0) + 1;
+                                return acc;
+                            }, {} as Record<number, number>);
+                            
+                            let dominantColor = 0;
+                            let maxCount = 0;
+                            for (const color in colorCounts) {
+                                if (colorCounts[color] > maxCount) {
+                                    maxCount = colorCounts[color];
+                                    dominantColor = parseInt(color);
+                                }
+                            }
+                            ng[r][c] = dominantColor > 0 ? dominantColor : (generativeColorIndicesRef.current[0] || 1);
+                        }
+                    }
+                }
+                break;
+            }
+            case 'pulse': {
+                const changes = new Map<string, number>();
+                const direction = pulseDirectionRef.current;
+                let r_start = 0, r_end = currentRows, r_inc = 1;
+                let c_start = 0, c_end = currentCols, c_inc = 1;
+
+                switch (direction) {
+                    case 'up':
+                        r_start = currentRows - 1; r_end = -1; r_inc = -1;
+                        break;
+                    case 'down':
+                        break;
+                    case 'left':
+                        c_start = currentCols - 1; c_end = -1; c_inc = -1;
+                        break;
+                    case 'right':
+                        break;
+                    case 'top-left':
+                        r_start = currentRows - 1; r_end = -1; r_inc = -1;
+                        c_start = currentCols - 1; c_end = -1; c_inc = -1;
+                        break;
+                    case 'top-right':
+                        r_start = currentRows - 1; r_end = -1; r_inc = -1;
+                        break;
+                    case 'bottom-left':
+                        c_start = currentCols - 1; c_end = -1; c_inc = -1;
+                        break;
+                    case 'bottom-right':
+                        break;
+                }
+
+                for (let r = r_start; r !== r_end; r += r_inc) {
+                    for (let c = c_start; c !== c_end; c += c_inc) {
+                        const currentColor = g[r]?.[c];
+                        if (currentColor > 0) {
+                            for (let dr = -1; dr <= 1; dr++) {
+                                for (let dc = -1; dc <= 1; dc++) {
+                                    if (dr === 0 && dc === 0) continue;
+                                    const nr = r + dr;
+                                    const nc = c + dc;
+                                    if (nr >= 0 && nr < currentRows && nc >= 0 && nc < currentCols && (g[nr]?.[nc] === 0 || pulseOvertakesRef.current)) {
+                                        const key = `${nr},${nc}`;
+                                        changes.set(key, currentColor);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                changes.forEach((color, key) => {
+                    const [r, c] = key.split(',').map(Number);
+                    ng[r][c] = color;
+                });
+                break;
+            }
+            case 'random': {
+                for (let r = 0; r < currentRows; r++) {
+                    for (let c = 0; c < currentCols; c++) {
+                        const currentColor = g[r]?.[c];
+                        if (currentColor === undefined || currentColor === 0) continue;
+
+                        if (Math.random() < spreadProbabilityRef.current) {
+                            let neighbors: { r: number, c: number }[] = [];
+                            const mode = randomWalkModeRef.current;
+
+                            for (let dr = -1; dr <= 1; dr++) {
+                                for (let dc = -1; dc <= 1; dc++) {
+                                    if (dr === 0 && dc === 0) continue;
+                                    if (mode === 'cardinal' && dr !== 0 && dc !== 0) continue;
+                                    
+                                    const nr = r + dr;
+                                    const nc = c + dc;
+                                    if (nr >= 0 && nr < currentRows && nc >= 0 && nc < currentCols) {
+                                        neighbors.push({ r: nr, c: nc });
+                                    }
+                                }
+                            }
+                            
+                            if (neighbors.length > 0) {
+                                for (let i = neighbors.length - 1; i > 0; i--) {
+                                    const j = Math.floor(Math.random() * (i + 1));
+                                    [neighbors[i], neighbors[j]] = [neighbors[j], neighbors[i]];
+                                }
+                                
+                                const count = randomWalkSpreadCountRef.current;
+                                for(let i=0; i < Math.min(count, neighbors.length); i++) {
+                                    const randomNeighbor = neighbors[i];
+                                    ng[randomNeighbor.r][randomNeighbor.c] = currentColor;
+                                }
+                            }
+                        }
+                    }
+                }
+                break;
+            }
+            case 'directional': {
+                for (let r = 0; r < currentRows; r++) {
+                    for (let c = 0; c < currentCols; c++) {
+                        const currentColor = g[r]?.[c];
+                        if (currentColor === undefined || currentColor === 0) continue;
+
+                        if (Math.random() < spreadProbabilityRef.current) {
+                            let neighbors: { r: number, c: number }[] = [];
+                            for (let dr = -1; dr <= 1; dr++) {
+                                for (let dc = -1; dc <= 1; dc++) {
+                                    if (dr === 0 && dc === 0) continue;
+                                    const nr = r + dr;
+                                    const nc = c + dc;
+                                    if (nr >= 0 && nr < currentRows && nc >= 0 && nc < currentCols) {
+                                        neighbors.push({ r: nr, c: nc });
+                                    }
+                                }
+                            }
+
+                            if (directionalBiasRef.current !== 'none' && Math.random() < directionalBiasStrengthRef.current) {
+                                const bias = directionalBiasRef.current;
+                                let dr = 0, dc = 0;
+                                
+                                switch (bias) {
+                                    case 'up':          dr = -1; dc =  0; break;
+                                    case 'down':        dr =  1; dc =  0; break;
+                                    case 'left':        dr =  0; dc = -1; break;
+                                    case 'right':       dr =  0; dc =  1; break;
+                                    case 'top-left':    dr = -1; dc = -1; break;
+                                    case 'top-right':   dr = -1; dc =  1; break;
+                                    case 'bottom-left': dr =  1; dc = -1; break;
+                                    case 'bottom-right':dr =  1; dc =  1; break;
+                                }
+        
+                                const biasedNeighbor = { r: r + dr, c: c + dc };
+                                
+                                if (biasedNeighbor.r >= 0 && biasedNeighbor.r < currentRows && biasedNeighbor.c >= 0 && biasedNeighbor.c < currentCols) {
+                                    ng[biasedNeighbor.r][biasedNeighbor.c] = currentColor;
+                                    continue;
+                                }
+                            }
+
+                            if (neighbors.length > 0) {
+                                const randomNeighbor = neighbors[Math.floor(Math.random() * neighbors.length)];
+                                ng[randomNeighbor.r][randomNeighbor.c] = currentColor;
+                            }
+                        }
+                    }
+                }
+                break;
+            }
+        }
+        return ng;
+    });
+  }, []);
+
+  const addRandomDots = useCallback(() => {
+    setGrid(g => {
+        const ng = cloneGrid(g);
+        const availableColors = generativeColorIndicesRef.current.length > 0 ? generativeColorIndicesRef.current : palette.slice(1).map((_, i) => i + 1);
+        if (availableColors.length === 0) return ng;
+
+        const numDots = Math.floor(Math.random() * 6) + 5;
+        for (let i = 0; i < numDots; i++) {
+            const r = Math.floor(Math.random() * rowsRef.current);
+            const c = Math.floor(Math.random() * colsRef.current);
+            const color = availableColors[Math.floor(Math.random() * availableColors.length)];
+            if(ng[r]) ng[r][c] = color;
+        }
+        
+        return ng;
+    });
+  }, [palette]);
+
+  const addRandomShapes = useCallback(() => {
+    setGrid(g => {
+        const ng = cloneGrid(g);
+        const availableColors = generativeColorIndicesRef.current.length > 0 ? generativeColorIndicesRef.current : palette.slice(1).map((_, i) => i + 1);
+        if (availableColors.length === 0) return ng;
+
+        const currentRows = rowsRef.current;
+        const currentCols = colsRef.current;
+
+        const numShapes = Math.floor(Math.random() * 2) + 1;
+        for (let i = 0; i < numShapes; i++) {
+            const color = availableColors[Math.floor(Math.random() * availableColors.length)];
+            const shapeType = Math.random() > 0.5 ? 'rect' : 'line';
+            
+            if (shapeType === 'rect') {
+                const startR = Math.floor(Math.random() * (currentRows - 5));
+                const startC = Math.floor(Math.random() * (currentCols - 5));
+                const width = Math.floor(Math.random() * 6) + 3;
+                const height = Math.floor(Math.random() * 6) + 3;
+                
+                for (let r = startR; r < Math.min(startR + height, currentRows); r++) {
+                    for (let c = startC; c < Math.min(startC + width, currentCols); c++) {
+                        if(ng[r]) ng[r][c] = color;
+                    }
+                }
+            } else {
+                const startR = Math.floor(Math.random() * currentRows);
+                const startC = Math.floor(Math.random() * currentCols);
+                const isHorizontal = Math.random() > 0.5;
+                const length = Math.floor(Math.random() * 10) + 5;
+                
+                for (let i = 0; i < length; i++) {
+                    let r = startR;
+                    let c = startC;
+                    
+                    if (isHorizontal) {
+                        c += i;
+                    } else {
+                        r += i;
+                    }
+                    
+                    if (r >= 0 && r < currentRows && c >= 0 && c < currentCols) {
+                        if(ng[r]) ng[r][c] = color;
+                    }
+                }
+            }
+        }
+        
+        return ng;
+    });
+  }, [palette]);
+
+  const runAutoSpread = useCallback(() => {
+    let lastTime = performance.now();
+    const loop = (time: number) => {
+      if (!runningRef.current) return;
+
+      const pattern = spreadPatternRef.current;
+      const speed = pattern === 'pulse' 
+        ? pulseSpeedRef.current 
+        : autoSpreadSpeedRef.current;
+      
+      const interval = 1000 / Math.max(0.25, speed);
+
+      if (time - lastTime >= interval) {
+        colorSpread();
+        lastTime = time;
+      }
+      rafRef.current = requestAnimationFrame(loop);
+    };
+    rafRef.current = requestAnimationFrame(loop);
+  }, [colorSpread]);
+
+  const runAutoDots = useCallback(() => {
+    let lastTime = performance.now();
+    const loop = (time: number) => {
+      if (!dotsRunningRef.current) return;
+      const interval = 1000 / Math.max(0.1, autoDotsSpeedRef.current);
+      if (time - lastTime >= interval) {
+        addRandomDots();
+        lastTime = time;
+      }
+      autoDotsRef.current = requestAnimationFrame(loop);
+    };
+    autoDotsRef.current = requestAnimationFrame(loop);
+  }, [addRandomDots]);
+
+  const runAutoShapes = useCallback(() => {
+    let lastTime = performance.now();
+    const loop = (time: number) => {
+      if (!shapesRunningRef.current) return;
+      const interval = 1000 / Math.max(0.1, autoShapesSpeedRef.current);
+      if (time - lastTime >= interval) {
+        addRandomShapes();
+        lastTime = time;
+      }
+      autoShapesRef.current = requestAnimationFrame(loop);
+    };
+    autoShapesRef.current = requestAnimationFrame(loop);
+  }, [addRandomShapes]);
+
+  const toggleAutoSpread = () => {
+    runningRef.current = !runningRef.current;
+    setAutoSpreading(runningRef.current);
+    if (runningRef.current) {
+      if (spreadPatternRef.current === 'vein') walkers.current = [];
+      if (spreadPatternRef.current === 'strobe') strobeStateRef.current = true;
+      if (spreadPatternRef.current === 'ripple') ripplesRef.current = [];
+      runAutoSpread();
+    } else if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+    }
+  };
+
+  const toggleAutoDots = () => {
+    dotsRunningRef.current = !dotsRunningRef.current;
+    setAutoDots(dotsRunningRef.current);
+    if (dotsRunningRef.current) {
+      runAutoDots();
+    } else if (autoDotsRef.current) {
+      cancelAnimationFrame(autoDotsRef.current);
+    }
+  };
+
+  const toggleAutoShapes = () => {
+    shapesRunningRef.current = !shapesRunningRef.current;
+    setAutoShapes(shapesRunningRef.current);
+    if (shapesRunningRef.current) {
+      runAutoShapes();
+    } else if (autoShapesRef.current) {
+      cancelAnimationFrame(autoShapesRef.current);
+    }
+  };
+
+  const startAllEnabled = () => {
+    if (autoSpreadEnabled && !autoSpreading) {
+      runningRef.current = true;
+      setAutoSpreading(true);
+      runAutoSpread();
+    }
+    if (autoDotsEnabled && !autoDots) {
+      dotsRunningRef.current = true;
+      setAutoDots(true);
+      runAutoDots();
+    }
+    if (autoShapesEnabled && !autoShapes) {
+      shapesRunningRef.current = true;
+      setAutoShapes(true);
+      runAutoShapes();
+    }
+  };
+
+  const stopAll = () => {
+    if (autoSpreading) {
+      runningRef.current = false;
+      setAutoSpreading(false);
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+    }
+    if (autoDots) {
+      dotsRunningRef.current = false;
+      setAutoDots(false);
+      if (autoDotsRef.current) {
+        cancelAnimationFrame(autoDotsRef.current);
+      }
+    }
+    if (autoShapes) {
+      shapesRunningRef.current = false;
+      setAutoShapes(false);
+      if (autoShapesRef.current) {
+        cancelAnimationFrame(autoShapesRef.current);
+      }
+    }
+  };
+
+  const handleHeaderMouseDown = (e: React.MouseEvent) => {
+    if (isMobile) return;
+    isDragging.current = true;
+    dragOffset.current = { x: e.clientX - panelPos.x, y: e.clientY - panelPos.y };
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      mousePos.current = { x: e.clientX, y: e.clientY };
+      if (isDragging.current)
+        setPanelPos({ x: e.clientX - dragOffset.current.x, y: e.clientY - dragOffset.current.y });
+    };
+    const handleMouseUp = () => { isDragging.current = false; };
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') {
+        e.preventDefault();
+        setIsMobile(false);
+        const mouseX = mousePos.current.x || window.innerWidth / 2;
+        const mouseY = mousePos.current.y || window.innerHeight / 2;
+        const desiredY = Math.max(20, Math.min(mouseY - 50, window.innerHeight - 400));
+        setPanelPos({ x: 24, y: desiredY });
+      }
+    };
+    
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isMobile, panelPos]);
+
+  const handleRowsChange = useCallback((newRows: number) => {
+    setRows(newRows);
+    setGrid(currentGrid => {
+      const newGrid = createEmptyGrid(newRows, cols);
+      const oldRows = currentGrid.length;
+      for (let r = 0; r < Math.min(oldRows, newRows); r++) {
+        const oldCols = currentGrid[r]?.length ?? 0;
+        for (let c = 0; c < Math.min(oldCols, cols); c++) {
+          newGrid[r][c] = currentGrid[r][c];
+        }
+      }
+      return newGrid;
+    });
+  }, [cols]);
+
+  const handleColsChange = useCallback((newCols: number) => {
+    setCols(newCols);
+    setGrid(currentGrid =>
+      currentGrid.map(row => {
+        const newRow = new Array(newCols).fill(0);
+        const oldLength = row.length;
+        for (let c = 0; c < Math.min(oldLength, newCols); c++) {
+          newRow[c] = row[c];
+        }
+        return newRow;
+      })
+    );
+  }, []);
+
+  const handlePaletteClick = (index: number) => {
+    if (isSavingColor) {
+      setPalette(p => {
+        const newPalette = [...p];
+        newPalette[index] = customColor;
+        return newPalette;
+      });
+      setIsSavingColor(false);
+      setSelectedColor(index);
+    } else {
+      setSelectedColor(index);
+    }
+  };
+  
+  const handleGenerativeColorToggle = (colorIndex: number) => {
+    setGenerativeColorIndices(prev => {
+        if (prev.includes(colorIndex)) {
+            return prev.filter(i => i !== colorIndex);
+        } else {
+            return [...prev, colorIndex];
+        }
+    });
+  };
+
+  const resetGenerativeSettings = () => {
+    setSpreadPattern(defaults.spreadPattern);
+    setPulseSpeed(defaults.pulseSpeed);
+    setDirectionalBias(defaults.directionalBias);
+    setConwayRules(defaults.conwayRules);
+    setTendrilsRules(defaults.tendrilsRules);
+    setDirectionalBiasStrength(defaults.directionalBiasStrength);
+    setPulseOvertakes(defaults.pulseOvertakes);
+    setPulseDirection(defaults.pulseDirection);
+    setRandomWalkSpreadCount(defaults.randomWalkSpreadCount);
+    setRandomWalkMode(defaults.randomWalkMode);
+    setVeinSeekStrength(defaults.veinSeekStrength);
+    setVeinBranchChance(defaults.veinBranchChance);
+    setCrystallizeThreshold(defaults.crystallizeThreshold);
+    setErosionRate(defaults.erosionRate);
+    setErosionSolidity(defaults.erosionSolidity);
+    setFlowDirection(defaults.flowDirection);
+    setFlowChance(defaults.flowChance);
+    setJitterChance(defaults.jitterChance);
+    setVortexCount(defaults.vortexCount);
+    setStrobeExpandThreshold(defaults.strobeExpandThreshold);
+    setStrobeContractThreshold(defaults.strobeContractThreshold);
+    setScrambleSwaps(defaults.scrambleSwaps);
+    setRippleChance(defaults.rippleChance);
+  };
+
+  const isAnyRunning = autoSpreading || autoDots || autoShapes;
+  const anyEnabled = autoSpreadEnabled || autoDotsEnabled || autoShapesEnabled;
+
+  return (
+    <div style={{
+      width: '100%',
+      minHeight: '100vh',
+      background: 'black',
+      display: 'flex',
+      flexDirection: isMobile ? 'column' : 'row',
+      alignItems: 'flex-start',
+      color: '#fff'
+    }}>
+      <div ref={canvasContainerRef} style={{ padding: '10px', display: 'inline-block' }}>
+        <canvas
+          ref={canvasRef}
+          onMouseDown={handleMouseDown}
+          onMouseUp={handleMouseUp}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseUp}
+          style={{ 
+            display: 'block', 
+            cursor: tool === 'fill' ? 'pointer' : 'crosshair', 
+            background: backgroundColor 
+          }}
+        />
+      </div>
+
+      <div
+        ref={panelRef}
+        style={{
+          position: isMobile ? 'relative' : 'fixed',
+          top: isMobile ? undefined : panelPos.y,
+          left: isMobile ? undefined : panelPos.x,
+          margin: isMobile ? '0 auto' : undefined,
+          background: 'rgba(39, 39, 42, 0.95)',
+          padding: '12px',
+          borderRadius: '10px',
+          width: isMobile ? 'calc(100% - 20px)': 'auto',
+          maxWidth: '480px',
+          zIndex: 1000,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+        }}
+      >
+        <div
+          onMouseDown={handleHeaderMouseDown}
+          style={{
+            fontWeight: 500,
+            marginBottom: '12px',
+            cursor: 'move',
+            padding: '4px',
+            background: 'rgba(63, 63, 70, 0.8)',
+            borderRadius: '6px',
+            fontSize: '1rem',
+            userSelect: 'none',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <span>painting-with-roughness</span>
+          <button
+            onClick={() => setPanelMinimized(prev => !prev)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#fff',
+              cursor: 'pointer',
+              fontSize: '1.2rem',
+              width: '24px',
+              height: '24px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '0',
+              marginLeft: '4px',
+            }}
+          >
+            {panelMinimized ? '+' : '-'}
+          </button>
+        </div>
+
+        <div style={{
+          maxHeight: panelMinimized ? '0px' : '2000px',
+          overflow: 'hidden',
+          transition: 'max-height 0.3s ease'
+        }}>
+          <div style={{
+            opacity: panelMinimized ? 0 : 1,
+            transition: 'opacity 0.3s ease',
+            pointerEvents: panelMinimized ? 'none' : 'auto'
+          }}>
+            
+            <div style={{ marginBottom: '12px' }}>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+                {[
+                  { label: 'Brush', value: 'brush' },
+                  { label: 'Fill', value: 'fill' },
+                  { label: 'Eraser', value: 'eraser' }
+                ].map(({ label, value }) => (
+                  <button
+                    key={value}
+                    onClick={() => { setTool(value); setIsSavingColor(false); }}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      background: tool === value ? '#52525b' : '#3a3a3c',
+                      color: '#fff',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontWeight: 'normal',
+                      fontSize: '0.95rem'
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setShowAutoControls(prev => !prev)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    background: showAutoControls ? '#52525b' : '#3a3a3c',
+                    color: '#fff',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontWeight: 'normal',
+                    fontSize: '0.95rem'
+                  }}
+                >
+                  Auto
+                </button>
+                <button
+                  onClick={() => setShowOptions(prev => !prev)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    background: showOptions ? '#52525b' : '#3a3a3c',
+                    color: '#fff',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontWeight: 'normal',
+                    fontSize: '0.95rem'
+                  }}
+                >
+                  Options
+                </button>
+                <button
+                  onClick={() => { clear(); setIsSavingColor(false); }}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    background: '#3a3a3c',
+                    color: '#fff',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontWeight: 'normal',
+                    fontSize: '0.95rem'
+                  }}
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+
+
+            <div style={{ marginBottom: '12px' }}>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+                {palette.slice(1).map((color, index) => (
+                  <button
+                      key={index + 1}
+                      onClick={() => handlePaletteClick(index + 1)}
+                      title={isSavingColor ? `Save ${customColor} to this slot` : `Select ${color}`}
+                      style={{
+                      width: '32px',
+                      height: '32px',
+                      background: color,
+                      border: selectedColor === index + 1 ? '3px solid #fff' : '1px solid #666',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      outline: isSavingColor ? '2px dashed #54a0ff' : 'none',
+                      outlineOffset: '2px',
+                      transition: 'outline 0.2s'
+                      }}
+                  />
+                ))}
+
+                <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  <div
+                    style={{
+                      position: 'relative',
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '6px',
+                      border: selectedColor === palette.length ? '3px solid #fff' : '1px solid #666',
+                      background: customColor,
+                      cursor: 'pointer',
+                      overflow: 'hidden'
+                    }}
+                    onClick={() => {
+                        const colorInput = panelRef.current?.querySelector('input[type="color"]') as HTMLInputElement;
+                        if (colorInput) {
+                            colorInput.click();
+                        }
+                        setSelectedColor(palette.length);
+                        setIsSavingColor(false);
+                    }}
+                  >
+                    <input
+                      type="color"
+                      value={customColor}
+                      onChange={(e) => setCustomColor(e.target.value)}
+                      style={{
+                        position: 'absolute',
+                        top: '-10px',
+                        left: '-10px',
+                        width: '52px',
+                        height: '52px',
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
+                    />
+                  </div>
+                  <button
+                    onClick={() => setIsSavingColor(prev => !prev)}
+                    title={isSavingColor ? "Cancel saving" : "Save this color to a slot"}
+                    style={{
+                        visibility: selectedColor === palette.length ? 'visible' : 'hidden',
+                        padding: '6px 0',
+                        height: '32px',
+                        borderRadius: '6px',
+                        background: isSavingColor ? '#54a0ff' : '#3a3a3c',
+                        color: '#fff',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '0.95rem',
+                        fontWeight: 'normal',
+                        whiteSpace: 'nowrap',
+                        minWidth: '75px',
+                        textAlign: 'center'
+                    }}
+                  >
+                    {isSavingColor ? 'Cancel' : 'Save'}
+                  </button>
+                </div>
+              </div>
+              {isSavingColor && <div style={{fontSize: '0.8rem', color: '#9ca3af', marginTop: '6px'}}>Select a color slot to replace it.</div>}
+            </div>
+
+            {showAutoControls && (
+              <>
+                <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => { toggleAutoSpread(); setIsSavingColor(false); }}
+                    disabled={!autoSpreadEnabled}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      background: autoSpreading 
+                        ? '#3a3a3c' 
+                        : autoSpreadEnabled 
+                          ? '#3a3a3c' 
+                          : '#52525b',
+                      color: '#fff',
+                      border: 'none',
+                      cursor: autoSpreadEnabled ? 'pointer' : 'not-allowed',
+                      fontWeight: 'normal',
+                      fontSize: '0.95rem',
+                      whiteSpace: 'nowrap',
+                      opacity: autoSpreadEnabled ? 1 : 0.6,
+                      boxShadow: autoSpreading ? '0 0 8px rgba(255, 255, 255, 0.4)' : 'none',
+                      transition: 'box-shadow 0.2s ease-in-out'
+                    }}
+                  >
+                    {autoSpreading ? 'Stop Spread' : 'Start Spread'}
+                  </button>
+                  {[
+                    { 
+                      label: autoDots ? 'Stop Dots' : 'Start Dots', 
+                      onClick: toggleAutoDots, 
+                      active: autoDots,
+                      enabled: autoDotsEnabled
+                    },
+                    { 
+                      label: autoShapes ? 'Stop Shapes' : 'Start Shapes', 
+                      onClick: toggleAutoShapes, 
+                      active: autoShapes,
+                      enabled: autoShapesEnabled
+                    }
+                  ].map(({ label, onClick, active, enabled }) => (
+                    <button
+                      key={label}
+                      onClick={() => { onClick(); setIsSavingColor(false); }}
+                      disabled={!enabled}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        background: enabled ? '#3a3a3c' : '#52525b',
+                        color: '#fff',
+                        border: 'none',
+                        cursor: enabled ? 'pointer' : 'not-allowed',
+                        fontWeight: 'normal',
+                        fontSize: '0.95rem',
+                        whiteSpace: 'nowrap',
+                        opacity: enabled ? 1 : 0.6,
+                        boxShadow: active ? '0 0 8px rgba(255, 255, 255, 0.4)' : 'none',
+                        transition: 'box-shadow 0.2s ease-in-out'
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => { isAnyRunning ? stopAll() : startAllEnabled(); setIsSavingColor(false); }}
+                    disabled={!anyEnabled && !isAnyRunning}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      background: anyEnabled || isAnyRunning ? '#3a3a3c' : '#52525b',
+                      color: '#fff',
+                      border: 'none',
+                      cursor: anyEnabled || isAnyRunning ? 'pointer' : 'not-allowed',
+                      fontWeight: 'normal',
+                      fontSize: '0.95rem',
+                      whiteSpace: 'nowrap',
+                      opacity: anyEnabled || isAnyRunning ? 1 : 0.6,
+                      boxShadow: isAnyRunning ? '0 0 8px rgba(255, 255, 255, 0.4)' : 'none',
+                      transition: 'box-shadow 0.2s ease-in-out'
+                    }}
+                  >
+                    {isAnyRunning ? 'Stop All' : 'Start All'}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {showOptions && (
+              <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                {[
+                  { label: 'Speed', onClick: () => setShowSpeedSettings(prev => !prev), bg: showSpeedSettings ? '#52525b' : '#3a3a3c' },
+                  { label: 'Canvas', onClick: () => setShowCanvasSettings(prev => !prev), bg: showCanvasSettings ? '#52525b' : '#3a3a3c' },
+                  { label: 'Visual', onClick: () => setShowVisualSettings(prev => !prev), bg: showVisualSettings ? '#52525b' : '#3a3a3c' },
+                  { label: 'Generative', onClick: () => setShowGenerativeSettings(prev => !prev), bg: showGenerativeSettings ? '#52525b' : '#3a3a3c' },
+                  { label: 'Steps', onClick: () => setShowStepControls(prev => !prev), bg: showStepControls ? '#52525b' : '#3a3a3c' }
+                ].map(({ label, onClick, bg }) => (
+                  <button
+                    key={label}
+                    onClick={onClick}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      background: bg,
+                      color: '#fff',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontWeight: 'normal',
+                      fontSize: '0.95rem',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+            
+            {showOptions && showStepControls && (
+              <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                {[
+                  { label: 'Spread Once', onClick: colorSpread },
+                  { label: 'Add Dots', onClick: addRandomDots },
+                  { label: 'Add Shapes', onClick: addRandomShapes }
+                ].map(({ label, onClick }) => (
+                  <button
+                    key={label}
+                    onClick={() => { onClick(); setIsSavingColor(false); }}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      background: '#3a3a3c',
+                      color: '#fff',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontWeight: 'normal',
+                      fontSize: '0.95rem',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {showOptions && (showSpeedSettings || showCanvasSettings) && (
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: showSpeedSettings && showCanvasSettings ? 'repeat(2, 1fr)' : '1fr',
+                gap: '12px', 
+                marginBottom: '12px' 
+              }}>
+                {showSpeedSettings && (
+                  <div>
+                    <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block', fontSize: '0.9rem', color: '#e5e7eb' }}>
+                      Speed Controls
+                    </label>
+                    {[
+                      ['Spread Rate', spreadProbability, 0, 1, 0.01, setSpreadProbability, '%'],
+                      ['Spread Speed', autoSpreadSpeed, 0.25, 100, 0.25, setAutoSpreadSpeed, '/s'],
+                      ['Dots Speed', autoDotsSpeed, 0.1, 100, 0.1, setAutoDotsSpeed, '/s'],
+                      ['Shapes Speed', autoShapesSpeed, 0.1, 100, 0.1, setAutoShapesSpeed, '/s']
+                    ].map(([label, value, min, max, step, setter, unit], idx) => (
+                      <div key={idx} style={{ marginBottom: '8px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                          <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>{label}:</label>
+                          <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>
+                            {label === 'Spread Rate' ? `${Math.round((value as number) * 100)}${unit}` : `${value}${unit}`}
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min={min as number}
+                          max={max as number}
+                          step={step as number}
+                          value={value as number}
+                          onChange={(e) => (setter as any)(Number(e.target.value))}
+                          style={{ width: '100%', height: '6px' }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+{showCanvasSettings && (
+  <div>
+    <label
+      style={{
+        fontWeight: 600,
+        marginBottom: '8px',
+        display: 'block',
+        fontSize: '0.9rem',
+        color: '#e5e7eb'
+      }}
+    >
+      Canvas Settings
+    </label>
+    {[
+      ['Brush Size', brushSize, 1, 100, 1, setBrushSize, ''],
+      ['Cell Size', cellSize, 1, 30, 1, setCellSize, ' px'],
+      ['Rows', rows, 10, 2000, 1, handleRowsChange, ''],
+      ['Cols', cols, 10, 2000, 1, handleColsChange, '']
+    ].map(([label, value, min, max, step, setter, unit], idx) => (
+      <div key={idx} style={{ marginBottom: '8px' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '2px'
+          }}
+        >
+          <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>
+            {label}:
+          </label>
+
+          {/* Rows/Cols: editable number input instead of static span */}
+          {label === 'Rows' || label === 'Cols' ? (
+            <input
+              type="number"
+              min={min as number}
+              max={max as number}
+              step={step as number}
+              value={value as number}
+              onChange={(e) => {
+                let newValue = Number(e.target.value);
+                if (isNaN(newValue)) return;
+                // Clamp immediately while typing
+                if (newValue < (min as number)) newValue = min as number;
+                if (newValue > (max as number)) newValue = max as number;
+                (setter as any)(newValue);
+              }}
+              style={{
+                width: '60px',
+                fontSize: '0.8rem',
+                color: '#9ca3af',
+                textAlign: 'right',
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                appearance: 'textfield',
+                MozAppearance: 'textfield'
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.color = '#fff';
+                e.currentTarget.style.background = '#1f2937';
+                e.currentTarget.style.border = '1px solid #4b5563';
+                e.currentTarget.style.borderRadius = '4px';
+                e.currentTarget.style.padding = '2px 4px';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.color = '#9ca3af';
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.border = 'none';
+                e.currentTarget.style.padding = '0';
+              }}
+            />
+          ) : (
+            <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>
+              {`${value}${unit}`}
+            </span>
+          )}
+        </div>
+
+        {/* Slider stays for all */}
+        <input
+          type="range"
+          min={min as number}
+          max={max as number}
+          step={step as number}
+          value={value as number}
+          onChange={(e) => (setter as any)(Number(e.target.value))}
+          style={{ width: '100%', height: '6px' }}
+        />
+      </div>
+    ))}
+  </div>
+)}
+
+
+              </div>
+            )}
+            
+            {showOptions && showGenerativeSettings && (
+              <div style={{ marginBottom: '12px' }}>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '10px' }}>
+                  <div style={{ flexGrow: 1}}>
+                    <label style={{ fontWeight: 600, marginBottom: '6px', display: 'block' }}>Spread Pattern:</label>
+                    <select
+                      value={spreadPattern}
+                      onChange={(e) => {
+                          if (e.target.value === 'vein') walkers.current = []; // Reset walkers
+                          setSpreadPattern(e.target.value as any);
+                      }}
+                      style={{ 
+                        padding: '4px 8px', 
+                        borderRadius: '6px', 
+                        background: '#3a3a3c', 
+                        color: '#fff', 
+                        border: 'none',
+                        width: '100%'
+                      }}
+                    >
+                      <option value="random">Random Walk</option>
+                      <option value="conway">Game of Life</option>
+                      <option value="tendrils">Tendrils</option>
+                      <option value="pulse">Current</option>
+                      <option value="directional">Directional</option>
+                      <option value="vein">Vein Growth</option>
+                      <option value="crystallize">Crystallize</option>
+                      <option value="erosion">Erosion</option>
+                      <option value="flow">Flow</option>
+                      <option value="jitter">Jitter</option>
+                      <option value="vortex">Vortex</option>
+                      <option value="scramble">Scramble</option>
+                      <option value="ripple">Ripple</option>
+                    </select>
+                  </div>
+                   <button
+                    onClick={resetGenerativeSettings}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      background: '#3a3a3c',
+                      color: '#fff',
+                      border: 'none',
+                      cursor: 'pointer',
+                      alignSelf: 'flex-end',
+                      height: '29px'
+                    }}
+                    title="Reset generative settings to default"
+                  >
+                    Reset
+                  </button>
+                </div>
+                
+                {spreadPattern === 'ripple' && (
+                  <div style={{background: '#2c2c2e', padding: '8px', borderRadius: '6px'}}>
+                      <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                              <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Ripple Chance:</label>
+                              <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{Math.round(rippleChance*100)}%</span>
+                          </div>
+                          <input type="range" min={0.01} max={0.5} step={0.01} value={rippleChance} onChange={(e) => setRippleChance(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                      </div>
+                  </div>
+                )}
+
+                {spreadPattern === 'scramble' && (
+                  <div style={{background: '#2c2c2e', padding: '8px', borderRadius: '6px'}}>
+                      <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                              <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Swaps per Step:</label>
+                              <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{scrambleSwaps}</span>
+                          </div>
+                          <input type="range" min={1} max={100} value={scrambleSwaps} onChange={(e) => setScrambleSwaps(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                      </div>
+                  </div>
+                )}
+                
+                {spreadPattern === 'vortex' && (
+                  <div style={{background: '#2c2c2e', padding: '8px', borderRadius: '6px'}}>
+                      <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                              <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Vortex Count:</label>
+                              <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{vortexCount}</span>
+                          </div>
+                          <input type="range" min={1} max={50} value={vortexCount} onChange={(e) => setVortexCount(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                      </div>
+                  </div>
+                )}
+
+                {spreadPattern === 'strobe' && (
+                  <div style={{background: '#2c2c2e', padding: '8px', borderRadius: '6px'}}>
+                      <div style={{ marginBottom: '8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                              <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Expand Threshold:</label>
+                              <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{strobeExpandThreshold} Neighbors</span>
+                          </div>
+                          <input type="range" min={1} max={8} value={strobeExpandThreshold} onChange={(e) => setStrobeExpandThreshold(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                      </div>
+                      <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                              <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Contract Threshold:</label>
+                              <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{strobeContractThreshold} Neighbors</span>
+                          </div>
+                          <input type="range" min={1} max={8} value={strobeContractThreshold} onChange={(e) => setStrobeContractThreshold(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                      </div>
+                  </div>
+                )}
+                
+                {spreadPattern === 'jitter' && (
+                  <div style={{background: '#2c2c2e', padding: '8px', borderRadius: '6px'}}>
+                      <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                              <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Jitter Chance:</label>
+                              <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{Math.round(jitterChance*100)}%</span>
+                          </div>
+                          <input type="range" min={0} max={1} step={0.05} value={jitterChance} onChange={(e) => setJitterChance(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                      </div>
+                  </div>
+                )}
+                
+                {spreadPattern === 'flow' && (
+                  <div style={{background: '#2c2c2e', padding: '8px', borderRadius: '6px'}}>
+                      <div style={{ marginBottom: '10px' }}>
+                          <label style={{ fontSize: '0.85rem', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Flow Direction:</label>
+                          <select
+                              value={flowDirection}
+                              onChange={(e) => setFlowDirection(e.target.value as any)}
+                              style={{ padding: '4px 8px', borderRadius: '6px', background: '#3a3a3c', color: '#fff', border: 'none', width: '100%' }}
+                          >
+                              <option value="down">Down</option>
+                              <option value="up">Up</option>
+                              <option value="left">Left</option>
+                              <option value="right">Right</option>
+                          </select>
+                      </div>
+                      <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                              <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Flow Chance:</label>
+                              <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{Math.round(flowChance*100)}%</span>
+                          </div>
+                          <input type="range" min={0} max={1} step={0.05} value={flowChance} onChange={(e) => setFlowChance(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                      </div>
+                  </div>
+                )}
+
+                {spreadPattern === 'vein' && (
+                  <div style={{background: '#2c2c2e', padding: '8px', borderRadius: '6px'}}>
+                    <div style={{ marginBottom: '8px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                          <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Seek Strength:</label>
+                          <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{Math.round(veinSeekStrength*100)}%</span>
+                        </div>
+                        <input type="range" min={0} max={1} step={0.05} value={veinSeekStrength} onChange={(e) => setVeinSeekStrength(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                    </div>
+                    <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                          <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Branching Chance:</label>
+                          <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{Math.round(veinBranchChance*100)}%</span>
+                        </div>
+                        <input type="range" min={0} max={0.5} step={0.01} value={veinBranchChance} onChange={(e) => setVeinBranchChance(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                    </div>
+                  </div>
+                )}
+
+                {spreadPattern === 'crystallize' && (
+                  <div style={{background: '#2c2c2e', padding: '8px', borderRadius: '6px'}}>
+                    <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                          <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Growth Threshold:</label>
+                          <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{crystallizeThreshold} Neighbors</span>
+                        </div>
+                        <input type="range" min={1} max={8} value={crystallizeThreshold} onChange={(e) => setCrystallizeThreshold(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                    </div>
+                  </div>
+                )}
+                
+                {spreadPattern === 'erosion' && (
+                  <div style={{background: '#2c2c2e', padding: '8px', borderRadius: '6px'}}>
+                     <div style={{ marginBottom: '8px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                          <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Erosion Rate:</label>
+                          <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{Math.round(erosionRate*100)}%</span>
+                        </div>
+                        <input type="range" min={0.01} max={1} step={0.01} value={erosionRate} onChange={(e) => setErosionRate(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                    </div>
+                    <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                          <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Core Protection:</label>
+                          <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{erosionSolidity} Neighbors</span>
+                        </div>
+                        <input type="range" min={1} max={8} value={erosionSolidity} onChange={(e) => setErosionSolidity(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                    </div>
+                  </div>
+                )}
+
+                {spreadPattern === 'random' && (
+                    <div style={{background: '#2c2c2e', padding: '8px', borderRadius: '6px'}}>
+                        <div style={{ marginBottom: '10px' }}>
+                            <label style={{ fontSize: '0.85rem', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Walk Mode:</label>
+                            <select
+                                value={randomWalkMode}
+                                onChange={(e) => setRandomWalkMode(e.target.value as any)}
+                                style={{ padding: '4px 8px', borderRadius: '6px', background: '#3a3a3c', color: '#fff', border: 'none', width: '100%' }}
+                            >
+                                <option value="any">8 Directions (Any)</option>
+                                <option value="cardinal">4 Directions (Cardinal)</option>
+                            </select>
+                        </div>
+                        <div style={{ marginBottom: '8px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                            <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Spread Count:</label>
+                            <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{randomWalkSpreadCount}</span>
+                            </div>
+                            <input
+                            type="range" min={1} max={8} step={1} value={randomWalkSpreadCount}
+                            onChange={(e) => setRandomWalkSpreadCount(Number(e.target.value))}
+                            style={{ width: '100%', height: '6px' }}
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {spreadPattern === 'conway' && (
+                  <div style={{background: '#2c2c2e', padding: '8px', borderRadius: '6px'}}>
+                    <RuleEditor label="Survive Counts" rules={conwayRules.survive} onChange={(newSurvive) => setConwayRules(r => ({ ...r, survive: newSurvive }))} />
+
+                    <RuleEditor label="Birth Counts" rules={conwayRules.born} onChange={(newBorn) => setConwayRules(r => ({ ...r, born: newBorn }))} />
+                  </div>
+                )}
+                
+                {spreadPattern === 'tendrils' && (
+                  <div style={{background: '#2c2c2e', padding: '8px', borderRadius: '6px'}}>
+                     <RuleEditor label="Survive Counts" rules={tendrilsRules.survive} onChange={(newSurvive) => setTendrilsRules(r => ({ ...r, survive: newSurvive }))} />
+
+                     <RuleEditor label="Birth Counts" rules={tendrilsRules.born} onChange={(newBorn) => setTendrilsRules(r => ({ ...r, born: newBorn }))} />
+                  </div>
+                )}
+                
+                {spreadPattern === 'pulse' && (
+                    <div style={{background: '#2c2c2e', padding: '8px', borderRadius: '6px'}}>
+                        <div style={{ marginBottom: '8px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                            <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Pulse Speed:</label>
+                            <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{pulseSpeed}</span>
+                            </div>
+                            <input
+                            type="range" min={1} max={60} value={pulseSpeed}
+                            onChange={(e) => setPulseSpeed(Number(e.target.value))}
+                            style={{ width: '100%', height: '6px' }}
+                            />
+                        </div>
+                        <div style={{ marginBottom: '10px' }}>
+                            <label style={{ fontSize: '0.85rem', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Flow Direction:</label>
+                            <select
+                                value={pulseDirection}
+                                onChange={(e) => setPulseDirection(e.target.value as any)}
+                                style={{ padding: '4px 8px', borderRadius: '6px', background: '#3a3a3c', color: '#fff', border: 'none', width: '100%' }}
+                            >
+                                <option value="top-left">Top-Left</option>
+                                <option value="top-right">Top-Right</option>
+                                <option value="bottom-left">Bottom-Left</option>
+                                <option value="bottom-right">Bottom-Right</option>
+                            </select>
+                        </div>
+                        <div style={{ fontWeight: 500, marginTop: '10px', fontSize: '0.85rem' }}>
+                            <label>
+                                <input 
+                                    type="checkbox" 
+                                    checked={pulseOvertakes} 
+                                    onChange={e => setPulseOvertakes(e.target.checked)} 
+                                    style={{ marginRight: '6px' }}
+                                /> 
+                                New Drops Overtake Existing
+                            </label>
+                        </div>
+                    </div>
+                )}
+
+                {spreadPattern === 'directional' && (
+                    <div style={{background: '#2c2c2e', padding: '8px', borderRadius: '6px'}}>
+                      <div style={{ marginBottom: '10px' }}>
+                          <label style={{ fontSize: '0.85rem', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Bias Direction:</label>
+                          <select
+                              value={directionalBias}
+                              onChange={(e) => setDirectionalBias(e.target.value as any)}
+                              style={{ padding: '4px 8px', borderRadius: '6px', background: '#3a3a3c', color: '#fff', border: 'none', width: '100%' }}
+                          >
+                                <option value="up">Up</option>
+                                <option value="down">Down</option>
+                                <option value="left">Left</option>
+                                <option value="right">Right</option>
+                                <option value="top-left">Top-Left</option>
+                                <option value="top-right">Top-Right</option>
+                                <option value="bottom-left">Bottom-Left</option>
+                                <option value="bottom-right">Bottom-Right</option>
+                          </select>
+                      </div>
+                      <div style={{ marginBottom: '8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                          <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Bias Strength:</label>
+                          <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{Math.round(directionalBiasStrength * 100)}%</span>
+                          </div>
+                          <input
+                          type="range" min={0} max={1} step={0.05} value={directionalBiasStrength}
+                          onChange={(e) => setDirectionalBiasStrength(Number(e.target.value))}
+                          style={{ width: '100%', height: '6px' }}
+                          />
+                      </div>
+                    </div>
+                )}
+
+                <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block', fontSize: '0.9rem', color: '#e5e7eb', marginTop: '12px' }}>
+                    Allowed Random Colors
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(48px, 1fr))', gap: '8px' }}>
+                    {palette.slice(1).map((color, index) => {
+                        const colorIndex = index + 1;
+                        return (
+                            <label 
+                                key={colorIndex} 
+                                style={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '4px', 
+                                    cursor: 'pointer',
+                                    padding: '2px',
+                                    borderRadius: '6px',
+                                    outline: isSavingColor ? '2px dashed #54a0ff' : 'none',
+                                    outlineOffset: '2px',
+                                    transition: 'outline 0.2s',
+                                }}
+                                title={isSavingColor ? `Save ${customColor} to this slot` : `Toggle color for generation`}
+                                onClick={(e) => {
+                                    if (isSavingColor) {
+                                        e.preventDefault();
+                                        setPalette(p => {
+                                            const newPalette = [...p];
+                                            newPalette[colorIndex] = customColor;
+                                            return newPalette;
+                                        });
+                                        setIsSavingColor(false);
+                                        setSelectedColor(colorIndex);
+                                    }
+                                }}
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={generativeColorIndices.includes(colorIndex)}
+                                    onChange={() => handleGenerativeColorToggle(colorIndex)}
+                                    style={{ pointerEvents: isSavingColor ? 'none' : 'auto' }}
+                                />
+                                <div style={{ width: '20px', height: '20px', background: color, borderRadius: '4px' }} />
+                            </label>
+                        );
+                    })}
+                </div>
+              </div>
+            )}
+
+            {showOptions && showVisualSettings && (
+              <>
+                <div style={{ marginBottom: '10px' }}>
+                  
+        <div style={{ marginBottom: '12px' }}> {/* BRUSH PATCH */}
+          <label style={{ fontSize: '0.9rem', fontWeight: 500, display: 'block', marginBottom: '6px' }}>Brush Type</label>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            {(['square', 'circle', 'diagonal', 'spray'] as BrushType[]).map(type => (
+              <button
+                key={type}
+                onClick={() => setBrushType(type)}
+                style={{ padding: '6px 12px', borderRadius: '6px', background: brushType === type ? '#8b5cf6' : '#3a3a3c', color: '#fff', border: 'none', cursor: 'pointer' }}
+              >
+                {type.charAt(0).toUpperCase() + type.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        
+        {brushType === 'spray' && (
+          <div style={{ marginBottom: '10px' }}> {/* BRUSH PATCH */}
+            <label style={{ fontWeight: 600, marginBottom: '6px', display: 'block' }}>Spray Density: {sprayDensity.toFixed(2)}</label>
+            <input type="range" step={0.05} min={0.05} max={1} value={sprayDensity} onChange={e => setSprayDensity(Number(e.target.value))} />
+          </div>
+        )}
+        {brushType === 'diagonal' && (
+          <div style={{ marginBottom: '10px' }}> {/* BRUSH PATCH */}
+            <label style={{ fontWeight: 600, marginBottom: '6px', display: 'block' }}>Diagonal Thickness: {diagonalThickness}</label>
+            <input type="range" min={1} max={100} value={diagonalThickness} onChange={e => setDiagonalThickness(Number(e.target.value))} />
+          </div>
+        )}
+<label style={{ fontWeight: 600, marginBottom: '6px', display: 'block' }}>Blend Mode:</label>
+                  <select
+                    value={blendMode}
+                    onChange={(e) => setBlendMode(e.target.value)}
+                    style={{ 
+                      padding: '4px 8px', 
+                      borderRadius: '6px', 
+                      background: '#3a3a3c', 
+                      color: '#fff', 
+                      border: 'none',
+                      width: '100%'
+                    }}
+                  >
+                    <option value="replace">Replace</option>
+                    <option value="overlay">Overlay</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+                  <label style={{ fontWeight: 600 }}>Background:</label>
+                  <input 
+                    type="color" 
+                    value={backgroundColor} 
+                    onChange={e => setBackgroundColor(e.target.value)}
+                    style={{ marginLeft: '8px' }}
+                  />
+                </div>
+
+                <div style={{ fontWeight: 600, marginBottom: '10px' }}>
+                  <label>
+                    <input 
+                      type="checkbox" 
+                      checked={showGrid} 
+                      onChange={e => setShowGrid(e.target.checked)} 
+                    /> 
+                    Show Grid
+                  </label>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
