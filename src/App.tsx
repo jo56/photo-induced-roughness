@@ -67,8 +67,8 @@ export default function RoughImageGenerator(): JSX.Element {
 
   const defaults = {
     cellSize: 2,
-    rows: 80,
-    cols: 80,
+    rows: 375,
+    cols: 375,
     showGrid: false,
     backgroundColor: '#0a0a0a',
     selectedColor: 1,
