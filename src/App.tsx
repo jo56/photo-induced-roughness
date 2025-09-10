@@ -1370,42 +1370,30 @@ export default function RoughImageGenerator(): JSX.Element {
       background: 'black',
       display: 'flex',
       flexDirection: isMobile ? 'column' : 'row',
-      alignItems: 'flex-start',
-      color: '#fff'
+      justifyContent: 'center',
+      alignItems: 'center',
+      color: '#fff',
+      gap: '20px'
     }}>
-      <div ref={canvasContainerRef} style={{ padding: '10px', display: 'inline-block' }}>
-        <canvas
-          ref={canvasRef}
-          style={{ 
-            display: 'block', 
-            cursor: 'default', 
-            background: backgroundColor 
-          }}
-        />
-      </div>
-
       <div
         ref={panelRef}
         style={{
-          position: isMobile ? 'relative' : 'fixed',
-          top: isMobile ? undefined : panelPos.y,
-          left: isMobile ? undefined : panelPos.x,
-          margin: isMobile ? '0 auto' : undefined,
           background: 'rgba(39, 39, 42, 0.95)',
           padding: '12px',
           borderRadius: '10px',
-          width: isMobile ? 'calc(100% - 20px)': 'auto',
+          width: isMobile ? 'calc(100% - 20px)' : 'auto',
           maxWidth: '480px',
           zIndex: 1000,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          maxHeight: isMobile ? 'none' : '80vh',
+          overflowY: isMobile ? 'visible' : 'auto',
+          margin: isMobile ? '0 auto' : '0'
         }}
       >
         <div
-          onMouseDown={handleHeaderMouseDown}
           style={{
             fontWeight: 500,
             marginBottom: '12px',
-            cursor: 'move',
             padding: '4px',
             background: 'rgba(63, 63, 70, 0.8)',
             borderRadius: '6px',
@@ -2223,6 +2211,21 @@ export default function RoughImageGenerator(): JSX.Element {
             )}
           </div>
         </div>
+      </div>
+      
+      <div ref={canvasContainerRef} style={{ 
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}>
+        <canvas
+          ref={canvasRef}
+          style={{ 
+            display: 'block', 
+            cursor: 'default', 
+            background: backgroundColor 
+          }}
+        />
       </div>
       
       {/* Resize Dialog */}
