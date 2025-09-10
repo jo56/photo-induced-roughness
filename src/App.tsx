@@ -66,7 +66,7 @@ export default function RoughImageGenerator(): JSX.Element {
   const ripplesRef = useRef<{r: number, c: number, color: number, radius: number, maxRadius: number}[]>([]);
 
   const defaults = {
-    cellSize: 8,
+    cellSize: 2,
     rows: 80,
     cols: 80,
     showGrid: false,
@@ -114,6 +114,9 @@ export default function RoughImageGenerator(): JSX.Element {
   const [selectedColor, setSelectedColor] = useState(defaults.selectedColor);
   const [uploadedImage, setUploadedImage] = useState<HTMLImageElement | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [showResizeDialog, setShowResizeDialog] = useState(false);
+  const [pendingImage, setPendingImage] = useState<HTMLImageElement | null>(null);
+  const [suggestedSize, setSuggestedSize] = useState({ width: 0, height: 0 });
   const [spreadProbability, setSpreadProbability] = useState(defaults.spreadProbability);
   const [autoSpreadSpeed, setAutoSpreadSpeed] = useState(defaults.autoSpreadSpeed);
   const [autoSpreading, setAutoSpreading] = useState(false);
@@ -361,10 +364,69 @@ export default function RoughImageGenerator(): JSX.Element {
     setImageFile(file);
     const img = new Image();
     img.onload = () => {
-      setUploadedImage(img);
-      convertImageToGrid(img);
+      // Check if image is larger than screen
+      const maxWidth = Math.floor(window.innerWidth * 0.8 / cellSize);
+      const maxHeight = Math.floor(window.innerHeight * 0.8 / cellSize);
+      
+      if (img.width > maxWidth || img.height > maxHeight) {
+        // Calculate suggested size maintaining aspect ratio
+        const aspectRatio = img.width / img.height;
+        let newWidth = Math.min(img.width, maxWidth);
+        let newHeight = Math.min(img.height, maxHeight);
+        
+        if (newWidth / aspectRatio > maxHeight) {
+          newWidth = maxHeight * aspectRatio;
+        } else {
+          newHeight = newWidth / aspectRatio;
+        }
+        
+        setSuggestedSize({ 
+          width: Math.floor(newWidth), 
+          height: Math.floor(newHeight) 
+        });
+        setPendingImage(img);
+        setShowResizeDialog(true);
+      } else {
+        setUploadedImage(img);
+        convertImageToGrid(img);
+      }
     };
     img.src = URL.createObjectURL(file);
+  };
+
+  const handleResizeAccept = () => {
+    if (pendingImage) {
+      const scaledImage = createScaledImage(pendingImage, suggestedSize.width, suggestedSize.height);
+      scaledImage.onload = () => {
+        setUploadedImage(scaledImage);
+        convertImageToGrid(scaledImage);
+        setShowResizeDialog(false);
+        setPendingImage(null);
+      };
+    }
+  };
+
+  const handleResizeReject = () => {
+    if (pendingImage) {
+      setUploadedImage(pendingImage);
+      convertImageToGrid(pendingImage);
+      setShowResizeDialog(false);
+      setPendingImage(null);
+    }
+  };
+
+  const createScaledImage = (img: HTMLImageElement, targetWidth: number, targetHeight: number): HTMLImageElement => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas not supported');
+
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+    ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+    const scaledImg = new Image();
+    scaledImg.src = canvas.toDataURL();
+    return scaledImg;
   };
 
   const convertImageToGrid = (img: HTMLImageElement) => {
@@ -2162,6 +2224,73 @@ export default function RoughImageGenerator(): JSX.Element {
           </div>
         </div>
       </div>
+      
+      {/* Resize Dialog */}
+      {showResizeDialog && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: '#1a1a1a',
+            padding: '24px',
+            borderRadius: '12px',
+            border: '1px solid #333',
+            maxWidth: '500px',
+            color: '#fff'
+          }}>
+            <h3 style={{ marginTop: 0, color: '#fff', fontSize: '18px' }}>Large Image Detected</h3>
+            <p style={{ marginBottom: '16px', lineHeight: '1.5' }}>
+              Your image is {pendingImage?.width} × {pendingImage?.height} pixels, which may be too large for comfortable viewing. 
+              A grid this size would create {pendingImage?.width && pendingImage?.height ? (pendingImage.width * pendingImage.height).toLocaleString() : 'many'} cells.
+            </p>
+            <p style={{ marginBottom: '20px', lineHeight: '1.5' }}>
+              We recommend resizing to {suggestedSize.width} × {suggestedSize.height} pixels 
+              ({(suggestedSize.width * suggestedSize.height).toLocaleString()} cells) for better performance.
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={handleResizeAccept}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: '#0066cc',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}
+              >
+                Resize Image
+              </button>
+              <button
+                onClick={handleResizeReject}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: '#666',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}
+              >
+                Use Original Size
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
