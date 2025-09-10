@@ -1590,27 +1590,49 @@ export default function RoughImageGenerator(): JSX.Element {
 
 
             <div style={{ marginBottom: '12px' }}>
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
-                {palette.slice(1).map((color, index) => (
-                  <button
-                      key={index + 1}
-                      onClick={() => handlePaletteClick(index + 1)}
-                      title={isSavingColor ? `Save ${customColor} to this slot` : `Select ${color}`}
-                      style={{
-                      width: '32px',
-                      height: '32px',
-                      background: color,
-                      border: selectedColor === index + 1 ? '3px solid #fff' : '1px solid #666',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      outline: isSavingColor ? '2px dashed #54a0ff' : 'none',
-                      outlineOffset: '2px',
-                      transition: 'outline 0.2s'
-                      }}
-                  />
-                ))}
+              <div style={{ 
+                maxHeight: '120px', 
+                overflowY: palette.length > 20 ? 'auto' : 'visible',
+                background: palette.length > 20 ? '#1a1a1a' : 'transparent',
+                padding: palette.length > 20 ? '8px' : '0',
+                borderRadius: palette.length > 20 ? '8px' : '0',
+                border: palette.length > 20 ? '1px solid #333' : 'none'
+              }}>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                  {palette.slice(1).map((color, index) => (
+                    <button
+                        key={index + 1}
+                        onClick={() => handlePaletteClick(index + 1)}
+                        title={isSavingColor ? `Save ${customColor} to this slot` : `Select ${color}`}
+                        style={{
+                        width: '32px',
+                        height: '32px',
+                        background: color,
+                        border: selectedColor === index + 1 ? '3px solid #fff' : '1px solid #666',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        outline: isSavingColor ? '2px dashed #54a0ff' : 'none',
+                        outlineOffset: '2px',
+                        transition: 'outline 0.2s',
+                        flexShrink: 0
+                        }}
+                    />
+                  ))}
+                </div>
+              </div>
+              
+              <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '8px' }}>
+                {palette.length > 20 && (
+                  <div style={{ 
+                    color: '#888', 
+                    fontSize: '11px',
+                    flex: 1
+                  }}>
+                    {palette.length - 1} colors (scroll to see all)
+                  </div>
+                )}
 
-                <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px', alignItems: 'center' }}>
+                <div style={{ marginLeft: palette.length > 20 ? '0' : 'auto', display: 'flex', gap: '6px', alignItems: 'center' }}>
                   <div
                     style={{
                       position: 'relative',
@@ -1952,7 +1974,9 @@ export default function RoughImageGenerator(): JSX.Element {
               </div>
             )}
             
-            {showOptions && showGenerativeSettings && (
+            {showOptions && (
+              <>
+                {showGenerativeSettings && (
               <div style={{ marginBottom: '12px' }}>
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '10px' }}>
                   <div style={{ flexGrow: 1}}>
@@ -2266,8 +2290,16 @@ export default function RoughImageGenerator(): JSX.Element {
                 <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block', fontSize: '0.9rem', color: '#e5e7eb', marginTop: '12px' }}>
                     Allowed Random Colors
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(48px, 1fr))', gap: '8px' }}>
-                    {palette.slice(1).map((color, index) => {
+                <div style={{ 
+                  maxHeight: '120px', 
+                  overflowY: palette.length > 20 ? 'auto' : 'visible',
+                  background: palette.length > 20 ? '#1a1a1a' : 'transparent',
+                  padding: palette.length > 20 ? '8px' : '0',
+                  borderRadius: palette.length > 20 ? '8px' : '0',
+                  border: palette.length > 20 ? '1px solid #333' : 'none'
+                }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(48px, 1fr))', gap: '8px' }}>
+                      {palette.slice(1).map((color, index) => {
                         const colorIndex = index + 1;
                         return (
                             <label 
@@ -2307,13 +2339,14 @@ export default function RoughImageGenerator(): JSX.Element {
                             </label>
                         );
                     })}
+                  </div>
                 </div>
               </div>
-            )}
+                )}
 
-            {showOptions && showVisualSettings && (
-              <>
-                <div style={{ marginBottom: '10px' }}>
+                {showVisualSettings && (
+                  <div>
+                    <div style={{ marginBottom: '10px' }}>
                   
 <label style={{ fontWeight: 600, marginBottom: '6px', display: 'block' }}>Blend Mode:</label>
                   <select
@@ -2353,6 +2386,8 @@ export default function RoughImageGenerator(): JSX.Element {
                     Show Grid
                   </label>
                 </div>
+                  </div>
+                )}
               </>
             )}
           </div>
