@@ -1,5 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
+// Extend Window interface for performance cache
+declare global {
+  interface Window {
+    coloredCellsCache?: {r: number, c: number, color: number}[];
+  }
+}
+
 const GRID_COLOR = '#27272a';
 
 function createEmptyGrid(rows: number, cols: number): number[][] {
@@ -11,7 +18,14 @@ function createEmptyGrid(rows: number, cols: number): number[][] {
 }
 
 function cloneGrid(grid: number[][]): number[][] {
-  return grid.map(row => [...row]);
+  const newGrid = new Array(grid.length);
+  for (let i = 0; i < grid.length; i++) {
+    newGrid[i] = new Array(grid[i].length);
+    for (let j = 0; j < grid[i].length; j++) {
+      newGrid[i][j] = grid[i][j];
+    }
+  }
+  return newGrid;
 }
 
 function RuleEditor({ label, rules, onChange }: { label: string, rules: number[], onChange: (rules: number[]) => void }) {
@@ -138,7 +152,6 @@ export default function RoughImageGenerator(): JSX.Element {
   const [showOptions, setShowOptions] = useState(true);
   const [customColor, setCustomColor] = useState('#ffffff');
   const [isSavingColor, setIsSavingColor] = useState(false);
-  const [generativeColorIndices, setGenerativeColorIndices] = useState(() => palette.slice(1).map((_, index) => index + 1));
   const [spreadPattern, setSpreadPattern] = useState<SpreadPattern>(defaults.spreadPattern);
   const [pulseSpeed, setPulseSpeed] = useState(defaults.pulseSpeed);
   const [directionalBias, setDirectionalBias] = useState<'none' | Direction>(defaults.directionalBias);
@@ -163,7 +176,6 @@ export default function RoughImageGenerator(): JSX.Element {
   const [scrambleSwaps, setScrambleSwaps] = useState(defaults.scrambleSwaps);
   const [rippleChance, setRippleChance] = useState(defaults.rippleChance);
 
-  const generativeColorIndicesRef = useRef(generativeColorIndices);
   const spreadProbabilityRef = useRef(spreadProbability);
   const autoSpreadSpeedRef = useRef(autoSpreadSpeed);
   const autoDotsSpeedRef = useRef(autoDotsSpeed);
@@ -198,7 +210,6 @@ export default function RoughImageGenerator(): JSX.Element {
   useEffect(() => { autoSpreadSpeedRef.current = autoSpreadSpeed; }, [autoSpreadSpeed]);
   useEffect(() => { autoDotsSpeedRef.current = autoDotsSpeed; }, [autoDotsSpeed]);
   useEffect(() => { autoShapesSpeedRef.current = autoShapesSpeed; }, [autoShapesSpeed]);
-  useEffect(() => { generativeColorIndicesRef.current = generativeColorIndices; }, [generativeColorIndices]);
   useEffect(() => { rowsRef.current = rows; }, [rows]);
   useEffect(() => { colsRef.current = cols; }, [cols]);
   useEffect(() => { spreadPatternRef.current = spreadPattern; }, [spreadPattern]);
@@ -320,22 +331,33 @@ export default function RoughImageGenerator(): JSX.Element {
     canvas.width = cols * cellSize;
     canvas.height = rows * cellSize;
 
+    // Clear canvas once
     ctx.fillStyle = backgroundColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Batch same-colored cells to reduce fillStyle changes
+    const colorGroups = new Map<string, Array<{r: number, c: number}>>();
 
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const colorIndex = grid[r]?.[c];
         if (colorIndex > 0) {
-          if (colorIndex === palette.length) {
-            ctx.fillStyle = customColor;
-          } else {
-            ctx.fillStyle = palette[colorIndex];
+          const colorKey = colorIndex === palette.length ? customColor : palette[colorIndex];
+          if (!colorGroups.has(colorKey)) {
+            colorGroups.set(colorKey, []);
           }
-          ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+          colorGroups.get(colorKey)!.push({r, c});
         }
       }
     }
+
+    // Draw each color group at once
+    colorGroups.forEach((cells, color) => {
+      ctx.fillStyle = color;
+      cells.forEach(({r, c}) => {
+        ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+      });
+    });
 
     if (showGrid) {
       ctx.strokeStyle = GRID_COLOR;
@@ -503,15 +525,20 @@ export default function RoughImageGenerator(): JSX.Element {
     const currentRows = rowsRef.current;
     const currentCols = colsRef.current;
 
+    // Clear cache when grid changes significantly
+    if (window.coloredCellsCache && Math.random() < 0.1) {
+        window.coloredCellsCache = undefined;
+    }
+
     setGrid(g => {
         let ng = cloneGrid(g);
 
         switch (pattern) {
             case 'ripple': {
-                // Update existing ripples
+                // Update existing ripples - use fewer points for better performance
                 ripplesRef.current.forEach(ripple => {
                     const r = Math.round(ripple.radius);
-                    for (let i = 0; i < 360; i += 5) {
+                    for (let i = 0; i < 360; i += 15) { // Reduced from 5 to 15 degrees
                         const angle = i * Math.PI / 180;
                         const nr = Math.round(ripple.r + r * Math.sin(angle));
                         const nc = Math.round(ripple.c + r * Math.cos(angle));
@@ -525,10 +552,11 @@ export default function RoughImageGenerator(): JSX.Element {
                 // Filter out old ripples
                 ripplesRef.current = ripplesRef.current.filter(r => r.radius <= r.maxRadius);
 
-                // Create new ripples
+                // Create new ripples - sample fewer cells
                 const chance = rippleChanceRef.current;
-                for (let r = 0; r < currentRows; r++) {
-                    for (let c = 0; c < currentCols; c++) {
+                const step = Math.max(1, Math.floor(Math.sqrt(currentRows * currentCols) / 50)); // Dynamic sampling
+                for (let r = 0; r < currentRows; r += step) {
+                    for (let c = 0; c < currentCols; c += step) {
                         if (g[r][c] > 0 && Math.random() < chance) {
                             ripplesRef.current.push({
                                 r, c, color: g[r][c], radius: 1, maxRadius: Math.max(currentRows, currentCols) / 3
@@ -539,14 +567,20 @@ export default function RoughImageGenerator(): JSX.Element {
                 break;
             }
             case 'scramble': {
-                const coloredCells: {r: number, c: number, color: number}[] = [];
-                for (let r = 0; r < currentRows; r++) {
-                    for (let c = 0; c < currentCols; c++) {
-                        if (g[r][c] > 0) {
-                            coloredCells.push({r, c, color: g[r][c]});
+                // Cache colored cells to avoid repeated scanning
+                if (!window.coloredCellsCache || window.coloredCellsCache.length === 0) {
+                    const coloredCells: {r: number, c: number, color: number}[] = [];
+                    for (let r = 0; r < currentRows; r++) {
+                        for (let c = 0; c < currentCols; c++) {
+                            if (g[r][c] > 0) {
+                                coloredCells.push({r, c, color: g[r][c]});
+                            }
                         }
                     }
+                    window.coloredCellsCache = coloredCells;
                 }
+                
+                const coloredCells = window.coloredCellsCache;
                 if (coloredCells.length < 2) break;
 
                 const swaps = Math.min(scrambleSwapsRef.current, Math.floor(coloredCells.length / 2));
@@ -877,10 +911,15 @@ export default function RoughImageGenerator(): JSX.Element {
                         }
 
                         const isAlive = g[r]?.[c] > 0;
-                        if (isAlive && !SURVIVE.includes(liveNeighbors)) {
+                        if (isAlive && SURVIVE.includes(liveNeighbors)) {
+                            // Cell survives - keep its current color
+                            ng[r][c] = g[r][c];
+                        } else if (isAlive && !SURVIVE.includes(liveNeighbors)) {
+                            // Cell dies
                             ng[r][c] = 0;
                         } else if (!isAlive && BORN.includes(liveNeighbors)) {
-                           const colorCounts = neighborColors.reduce((acc, color) => {
+                            // Cell is born - use dominant neighbor color
+                            const colorCounts = neighborColors.reduce((acc, color) => {
                                 acc[color] = (acc[color] || 0) + 1;
                                 return acc;
                             }, {} as Record<number, number>);
@@ -893,7 +932,10 @@ export default function RoughImageGenerator(): JSX.Element {
                                     dominantColor = parseInt(color);
                                 }
                             }
-                            ng[r][c] = dominantColor > 0 ? dominantColor : (generativeColorIndicesRef.current[0] || 1);
+                            ng[r][c] = dominantColor > 0 ? dominantColor : 1;
+                        } else {
+                            // Cell remains dead
+                            ng[r][c] = 0;
                         }
                     }
                 }
@@ -1054,7 +1096,7 @@ export default function RoughImageGenerator(): JSX.Element {
   const addRandomDots = useCallback(() => {
     setGrid(g => {
         const ng = cloneGrid(g);
-        const availableColors = generativeColorIndicesRef.current.length > 0 ? generativeColorIndicesRef.current : palette.slice(1).map((_, i) => i + 1);
+        const availableColors = palette.slice(1).map((_, i) => i + 1);
         if (availableColors.length === 0) return ng;
 
         const numDots = Math.floor(Math.random() * 6) + 5;
@@ -1072,7 +1114,7 @@ export default function RoughImageGenerator(): JSX.Element {
   const addRandomShapes = useCallback(() => {
     setGrid(g => {
         const ng = cloneGrid(g);
-        const availableColors = generativeColorIndicesRef.current.length > 0 ? generativeColorIndicesRef.current : palette.slice(1).map((_, i) => i + 1);
+        const availableColors = palette.slice(1).map((_, i) => i + 1);
         if (availableColors.length === 0) return ng;
 
         const currentRows = rowsRef.current;
@@ -1123,6 +1165,7 @@ export default function RoughImageGenerator(): JSX.Element {
 
   const runAutoSpread = useCallback(() => {
     let lastTime = performance.now();
+    let frameCount = 0;
     const loop = (time: number) => {
       if (!runningRef.current) return;
 
@@ -1132,6 +1175,15 @@ export default function RoughImageGenerator(): JSX.Element {
         : autoSpreadSpeedRef.current;
       
       const interval = 1000 / Math.max(0.25, speed);
+
+      // Skip frames for very slow speeds to reduce CPU usage
+      if (speed < 1) {
+        frameCount++;
+        if (frameCount % Math.ceil(60 / Math.max(0.25, speed)) !== 0) {
+          rafRef.current = requestAnimationFrame(loop);
+          return;
+        }
+      }
 
       if (time - lastTime >= interval) {
         colorSpread();
@@ -1324,15 +1376,6 @@ export default function RoughImageGenerator(): JSX.Element {
     }
   };
   
-  const handleGenerativeColorToggle = (colorIndex: number) => {
-    setGenerativeColorIndices(prev => {
-        if (prev.includes(colorIndex)) {
-            return prev.filter(i => i !== colorIndex);
-        } else {
-            return [...prev, colorIndex];
-        }
-    });
-  };
 
   const resetGenerativeSettings = () => {
     setSpreadPattern(defaults.spreadPattern);
@@ -1826,6 +1869,7 @@ export default function RoughImageGenerator(): JSX.Element {
                       <option value="flow">Flow</option>
                       <option value="jitter">Jitter</option>
                       <option value="vortex">Vortex</option>
+                      <option value="strobe">Strobe</option>
                       <option value="scramble">Scramble</option>
                       <option value="ripple">Ripple</option>
                     </select>
@@ -2106,60 +2150,6 @@ export default function RoughImageGenerator(): JSX.Element {
                     </div>
                 )}
 
-                <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block', fontSize: '0.9rem', color: '#e5e7eb', marginTop: '12px' }}>
-                    Allowed Random Colors
-                </label>
-                <div style={{ 
-                  maxHeight: '120px', 
-                  overflowY: palette.length > 20 ? 'auto' : 'visible',
-                  background: palette.length > 20 ? '#1a1a1a' : 'transparent',
-                  padding: palette.length > 20 ? '8px' : '0',
-                  borderRadius: palette.length > 20 ? '8px' : '0',
-                  border: palette.length > 20 ? '1px solid #333' : 'none'
-                }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(48px, 1fr))', gap: '8px' }}>
-                      {palette.slice(1).map((color, index) => {
-                        const colorIndex = index + 1;
-                        return (
-                            <label 
-                                key={colorIndex} 
-                                style={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    gap: '4px', 
-                                    cursor: 'pointer',
-                                    padding: '2px',
-                                    borderRadius: '6px',
-                                    outline: isSavingColor ? '2px dashed #54a0ff' : 'none',
-                                    outlineOffset: '2px',
-                                    transition: 'outline 0.2s',
-                                }}
-                                title={isSavingColor ? `Save ${customColor} to this slot` : `Toggle color for generation`}
-                                onClick={(e) => {
-                                    if (isSavingColor) {
-                                        e.preventDefault();
-                                        setPalette(p => {
-                                            const newPalette = [...p];
-                                            newPalette[colorIndex] = customColor;
-                                            return newPalette;
-                                        });
-                                        setIsSavingColor(false);
-                                        setSelectedColor(colorIndex);
-                                    }
-                                }}
-                            >
-                                <input
-                                    type="checkbox"
-                                    checked={generativeColorIndices.includes(colorIndex)}
-                                    onChange={() => handleGenerativeColorToggle(colorIndex)}
-                                    style={{ pointerEvents: isSavingColor ? 'none' : 'auto' }}
-                                />
-                                <div style={{ width: '20px', height: '20px', background: color, borderRadius: '4px' }} />
-                            </label>
-                        );
-                    })}
-                  </div>
-                </div>
               </div>
                 )}
 
