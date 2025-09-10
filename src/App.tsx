@@ -1,11 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-// Extend Window interface for performance cache
-declare global {
-  interface Window {
-    coloredCellsCache?: {r: number, c: number, color: number}[];
-  }
-}
 
 const GRID_COLOR = '#27272a';
 
@@ -86,7 +80,7 @@ export default function RoughImageGenerator(): JSX.Element {
     showGrid: false,
     backgroundColor: '#0a0a0a',
     selectedColor: 1,
-    spreadProbability: 0.2,
+    spreadProbability: 0.3,
     autoSpreadSpeed: 3,
     blendMode: 'replace',
     spreadPattern: 'random' as SpreadPattern,
@@ -100,18 +94,18 @@ export default function RoughImageGenerator(): JSX.Element {
     randomWalkSpreadCount: 1,
     randomWalkMode: 'any' as const,
     veinSeekStrength: 0.5,
-    veinBranchChance: 0.1,
+    veinBranchChance: 0.15,
     crystallizeThreshold: 2,
-    erosionRate: 0.5,
-    erosionSolidity: 3,
+    erosionRate: 0.3,
+    erosionSolidity: 4,
     flowDirection: 'down' as Direction,
-    flowChance: 0.5,
-    jitterChance: 0.3,
-    vortexCount: 5,
+    flowChance: 0.7,
+    jitterChance: 0.4,
+    vortexCount: 8,
     strobeExpandThreshold: 2,
-    strobeContractThreshold: 3,
-    scrambleSwaps: 10,
-    rippleChance: 0.05,
+    strobeContractThreshold: 4,
+    scrambleSwaps: 15,
+    rippleChance: 0.15,
   };
 
   const [palette, setPalette] = useState([
@@ -525,10 +519,6 @@ export default function RoughImageGenerator(): JSX.Element {
     const currentRows = rowsRef.current;
     const currentCols = colsRef.current;
 
-    // Clear cache when grid changes significantly
-    if (window.coloredCellsCache && Math.random() < 0.1) {
-        window.coloredCellsCache = undefined;
-    }
 
     setGrid(g => {
         let ng = cloneGrid(g);
@@ -567,20 +557,15 @@ export default function RoughImageGenerator(): JSX.Element {
                 break;
             }
             case 'scramble': {
-                // Cache colored cells to avoid repeated scanning
-                if (!window.coloredCellsCache || window.coloredCellsCache.length === 0) {
-                    const coloredCells: {r: number, c: number, color: number}[] = [];
-                    for (let r = 0; r < currentRows; r++) {
-                        for (let c = 0; c < currentCols; c++) {
-                            if (g[r][c] > 0) {
-                                coloredCells.push({r, c, color: g[r][c]});
-                            }
+                // Scan for colored cells each time for accuracy
+                const coloredCells: {r: number, c: number, color: number}[] = [];
+                for (let r = 0; r < currentRows; r++) {
+                    for (let c = 0; c < currentCols; c++) {
+                        if (g[r][c] > 0) {
+                            coloredCells.push({r, c, color: g[r][c]});
                         }
                     }
-                    window.coloredCellsCache = coloredCells;
                 }
-                
-                const coloredCells = window.coloredCellsCache;
                 if (coloredCells.length < 2) break;
 
                 const swaps = Math.min(scrambleSwapsRef.current, Math.floor(coloredCells.length / 2));
@@ -743,18 +728,18 @@ export default function RoughImageGenerator(): JSX.Element {
                 let r_start = 0, r_end = currentRows, r_inc = 1;
                 let c_start = 0, c_end = currentCols, c_inc = 1;
         
-                if (dir.includes('down')) { r_start = currentRows - 1; r_end = -1; r_inc = -1; }
-                if (dir.includes('right')) { c_start = currentCols - 1; c_end = -1; c_inc = -1; }
+                if (dir === 'up') { r_start = currentRows - 1; r_end = -1; r_inc = -1; }
+                if (dir === 'left') { c_start = currentCols - 1; c_end = -1; c_inc = -1; }
         
                 for (let r = r_start; r !== r_end; r += r_inc) {
                     for (let c = c_start; c !== c_end; c += c_inc) {
                         const color = g[r]?.[c];
                         if (color > 0 && Math.random() < chance) {
                             let dr = 0, dc = 0;
-                            if (dir.includes('up')) dr = -1;
-                            if (dir.includes('down')) dr = 1;
-                            if (dir.includes('left')) dc = -1;
-                            if (dir.includes('right')) dc = 1;
+                            if (dir === 'up') dr = -1;
+                            else if (dir === 'down') dr = 1;
+                            else if (dir === 'left') dc = -1;
+                            else if (dir === 'right') dc = 1;
         
                             const nr = r + dr;
                             const nc = c + dc;
@@ -788,10 +773,24 @@ export default function RoughImageGenerator(): JSX.Element {
                             }
                         }
                     }
-                    if (walkers.current.length === 0 && g.flat().some(cell => cell > 0)) {
-                         let r=0, c=0;
-                         while(g[r][c] === 0) { r = Math.floor(Math.random()*currentRows); c = Math.floor(Math.random()*currentCols); }
-                         walkers.current.push({r,c, color: g[r][c]});
+                    if (walkers.current.length === 0) {
+                        // Find all colored pixels to start walkers from
+                        const coloredPixels: {r: number, c: number, color: number}[] = [];
+                        for(let r = 0; r < currentRows; r++) {
+                            for(let c = 0; c < currentCols; c++) {
+                                if(g[r][c] > 0) {
+                                    coloredPixels.push({r, c, color: g[r][c]});
+                                }
+                            }
+                        }
+                        // Start with a few random walkers if we have colored pixels
+                        if (coloredPixels.length > 0) {
+                            const numWalkers = Math.min(5, coloredPixels.length);
+                            for (let i = 0; i < numWalkers; i++) {
+                                const pixel = coloredPixels[Math.floor(Math.random() * coloredPixels.length)];
+                                walkers.current.push({r: pixel.r, c: pixel.c, color: pixel.color});
+                            }
+                        }
                     }
                 }
 
@@ -818,14 +817,12 @@ export default function RoughImageGenerator(): JSX.Element {
                         bestDir = { dr: Math.floor(Math.random() * 3) - 1, dc: Math.floor(Math.random() * 3) - 1 };
                     }
                     
-                    walker.r += bestDir.dr;
-                    walker.c += bestDir.dc;
-                    walker.r = Math.max(0, Math.min(currentRows - 1, walker.r));
-                    walker.c = Math.max(0, Math.min(currentCols - 1, walker.c));
-
-                    const r_int = Math.round(walker.r);
-                    const c_int = Math.round(walker.c);
-                    ng[r_int][c_int] = walker.color;
+                    const newR = Math.max(0, Math.min(currentRows - 1, walker.r + bestDir.dr));
+                    const newC = Math.max(0, Math.min(currentCols - 1, walker.c + bestDir.dc));
+                    
+                    walker.r = Math.floor(newR);
+                    walker.c = Math.floor(newC);
+                    ng[walker.r][walker.c] = walker.color;
                     
                     if (Math.random() < veinBranchChanceRef.current) {
                         walkers.current.push({...walker});
@@ -861,6 +858,30 @@ export default function RoughImageGenerator(): JSX.Element {
                                    }
                                }
                            }
+                       } else if (Math.random() < 0.05) {
+                           // Occasionally allow crystallization to replace existing pixels
+                           const neighbors: number[] = [];
+                           for (let dr = -1; dr <= 1; dr++) {
+                               for (let dc = -1; dc <= 1; dc++) {
+                                   if (dr === 0 && dc === 0) continue;
+                                   const nr = r + dr, nc = c + dc;
+                                   if (nr >= 0 && nr < currentRows && nc >= 0 && nc < currentCols && g[nr][nc] > 0 && g[nr][nc] !== g[r][c]) {
+                                       neighbors.push(g[nr][nc]);
+                                   }
+                               }
+                           }
+                           
+                           if (neighbors.length >= crystallizeThresholdRef.current + 2) {
+                               const counts: {[key:number]: number} = {};
+                               neighbors.forEach(n => { counts[n] = (counts[n] || 0) + 1; });
+                               
+                               for(const color in counts) {
+                                   if (counts[color] >= crystallizeThresholdRef.current + 1) {
+                                       ng[r][c] = parseInt(color);
+                                       break;
+                                   }
+                               }
+                           }
                        }
                     }
                 }
@@ -869,7 +890,7 @@ export default function RoughImageGenerator(): JSX.Element {
             case 'erosion': {
                 for(let r = 0; r < currentRows; r++) {
                     for(let c = 0; c < currentCols; c++) {
-                        if (g[r][c] > 0 && Math.random() < erosionRateRef.current) {
+                        if (g[r][c] > 0) {
                             let emptyNeighbors = 0;
                             for (let dr = -1; dr <= 1; dr++) {
                                 for (let dc = -1; dc <= 1; dc++) {
@@ -880,7 +901,7 @@ export default function RoughImageGenerator(): JSX.Element {
                                     }
                                 }
                             }
-                            if (emptyNeighbors >= erosionSolidityRef.current) {
+                            if (emptyNeighbors >= erosionSolidityRef.current && Math.random() < erosionRateRef.current) {
                                 ng[r][c] = 0;
                             }
                         }
@@ -894,6 +915,14 @@ export default function RoughImageGenerator(): JSX.Element {
                 const BORN = rules.born;
                 const SURVIVE = rules.survive;
                 
+                // First, preserve all existing pixels
+                for (let r = 0; r < currentRows; r++) {
+                    for (let c = 0; c < currentCols; c++) {
+                        ng[r][c] = g[r][c]; // Copy existing state
+                    }
+                }
+                
+                // Then apply cellular automata rules only to empty spaces and unstable pixels
                 for (let r = 0; r < currentRows; r++) {
                     for (let c = 0; c < currentCols; c++) {
                         let liveNeighbors = 0;
@@ -911,14 +940,13 @@ export default function RoughImageGenerator(): JSX.Element {
                         }
 
                         const isAlive = g[r]?.[c] > 0;
-                        if (isAlive && SURVIVE.includes(liveNeighbors)) {
-                            // Cell survives - keep its current color
-                            ng[r][c] = g[r][c];
-                        } else if (isAlive && !SURVIVE.includes(liveNeighbors)) {
-                            // Cell dies
+                        
+                        // Only apply death rules with low probability to preserve image
+                        if (isAlive && !SURVIVE.includes(liveNeighbors) && Math.random() < 0.1) {
                             ng[r][c] = 0;
-                        } else if (!isAlive && BORN.includes(liveNeighbors)) {
-                            // Cell is born - use dominant neighbor color
+                        }
+                        // Apply birth rules to empty spaces
+                        else if (!isAlive && BORN.includes(liveNeighbors)) {
                             const colorCounts = neighborColors.reduce((acc, color) => {
                                 acc[color] = (acc[color] || 0) + 1;
                                 return acc;
@@ -933,9 +961,6 @@ export default function RoughImageGenerator(): JSX.Element {
                                 }
                             }
                             ng[r][c] = dominantColor > 0 ? dominantColor : 1;
-                        } else {
-                            // Cell remains dead
-                            ng[r][c] = 0;
                         }
                     }
                 }
