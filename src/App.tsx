@@ -122,6 +122,7 @@ export default function RoughImageGenerator(): JSX.Element {
   const [selectedColor, setSelectedColor] = useState(defaults.selectedColor);
   const [uploadedImage, setUploadedImage] = useState<HTMLImageElement | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [originalGrid, setOriginalGrid] = useState<number[][] | null>(null);
   const [showResizeDialog, setShowResizeDialog] = useState(false);
   const [pendingImage, setPendingImage] = useState<HTMLImageElement | null>(null);
   const [suggestedSize, setSuggestedSize] = useState({ width: 0, height: 0 });
@@ -503,6 +504,7 @@ export default function RoughImageGenerator(): JSX.Element {
     setCols(imageWidth);
     setPalette(newPalette);
     setGrid(newGrid);
+    setOriginalGrid(cloneGrid(newGrid));
   };
 
 
@@ -510,7 +512,11 @@ export default function RoughImageGenerator(): JSX.Element {
 
 
   const clear = () => {
-    setGrid(createEmptyGrid(rows, cols));
+    if (originalGrid) {
+      setGrid(cloneGrid(originalGrid));
+    } else {
+      setGrid(createEmptyGrid(rows, cols));
+    }
     setIsSavingColor(false);
   };
 
@@ -1574,7 +1580,7 @@ export default function RoughImageGenerator(): JSX.Element {
                     fontSize: '0.95rem'
                   }}
                 >
-                  Clear
+                  Reset
                 </button>
               </div>
             </div>
