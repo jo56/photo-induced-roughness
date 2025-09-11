@@ -53,6 +53,66 @@ return (
 type Direction = 'up' | 'down' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 type SpreadPattern = 'random' | 'conway' | 'pulse' | 'directional' | 'tendrils' | 'vein' | 'crystallize' | 'erosion' | 'flow' | 'jitter' | 'vortex' | 'strobe' | 'scramble' | 'ripple';
 
+// Upload Button Component
+function CompactUploadButton({ imageFile, onClick }: { imageFile: File | null; onClick: () => void }) {
+  const [isHovered, setIsHovered] = useState(false);
+  
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        background: 'var(--surface)',
+        backdropFilter: 'blur(10px)',
+        border: '1px solid var(--border-subtle)',
+        borderRadius: '8px',
+        padding: '12px 16px',
+        cursor: 'pointer',
+        marginBottom: '20px',
+        userSelect: 'none',
+        transition: 'all 0.3s ease',
+        boxShadow: isHovered
+          ? '0 8px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15)'
+          : '0 2px 8px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+        transform: isHovered ? 'translateY(-1px)' : 'translateY(0px)'
+      }}
+      onClick={onClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div style={{
+        width: '32px',
+        height: '32px',
+        background: 'var(--accent-subtle)',
+        borderRadius: '6px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '1.2rem'
+      }}>
+        📎
+      </div>
+      <div>
+        <div style={{ 
+          fontWeight: 500, 
+          fontSize: '0.85rem', 
+          color: 'var(--text-primary)',
+          marginBottom: '2px'
+        }}>
+          {imageFile ? imageFile.name : 'Choose Image'}
+        </div>
+        <div style={{ 
+          fontSize: '0.7rem', 
+          color: 'var(--text-dim)' 
+        }}>
+          {imageFile ? 'Click to change' : 'Browse files'}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 
 export default function RoughImageGenerator(): JSX.Element {
@@ -1766,43 +1826,18 @@ return () => window.removeEventListener('resize', handleResize);
             background: 'linear-gradient(180deg, transparent 0%, rgba(12, 7, 8, 0.3) 100%)'
           }}>
 
-            <div
-              style={{
-                background: 'linear-gradient(180deg, #1a1214 0%, #0c0708 100%)',
-                border: '1px solid #1c1315',
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)',
-                borderRadius: '6px',
-                padding: '12px',
-                textAlign: 'center',
-                cursor: 'pointer',
-                marginBottom: '20px',
-                userSelect: 'none',
-              }}
-              onClick={() => document.getElementById('imageUpload')?.click()}
-            >
-              <div style={{ fontWeight: 500, fontSize: '0.9rem', marginBottom: imageFile ? '4px' : '0', color: '#b0a09d' }}>
-                {imageFile ? 'Change Image' : 'Load Image From File'}
-              </div>
-              {imageFile && (
-                <div style={{
-                  fontSize: '0.75rem',
-                  color: '#8a7a77',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  maxWidth: '100%'
-                }}>
-                  {imageFile.name}
-                </div>
-              )}
-              <input
-                id="imageUpload"
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                style={{ display: 'none' }}
-              />
-            </div>
+            <CompactUploadButton 
+              imageFile={imageFile} 
+              onClick={() => document.getElementById('imageUpload')?.click()} 
+            />
+
+            <input
+              id="imageUpload"
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              style={{ display: 'none' }}
+            />
 
 
             <div className="control-group">
