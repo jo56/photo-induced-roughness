@@ -35,7 +35,7 @@ return (
         <div style={{ marginBottom: '8px' }}><label style={{ fontSize: '0.85rem', fontWeight: 500, display: 'block', marginBottom: '4px' }}>{label}:</label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                 {numbers.map(num => (
-                    <label key={num} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', background: '#241a1c', border: '1px solid #4a6b4f', padding: '4px 8px', borderRadius: '4px', userSelect: 'none' }}>
+                    <label key={num} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', background: '#241a1c', border: '1px solid #1c1315', padding: '4px 8px', borderRadius: '4px', userSelect: 'none' }}>
                         <input
                             type="checkbox"
                             checked={rules.includes(num)}
@@ -75,7 +75,7 @@ export default function RoughImageGenerator(): JSX.Element {
         outline: none;
       }
       input[type="range"]:focus {
-        box-shadow: inset 0 1px 0 rgba(0,0,0,0.5), 0 0 0 1px #4a6b4f, 0 0 0 3px rgba(74,107,79,0.25);
+        box-shadow: inset 0 1px 0 rgba(0,0,0,0.5), 0 0 0 1px #333;
       }
       /* WebKit */
       input[type="range"]::-webkit-slider-runnable-track {
@@ -91,7 +91,7 @@ export default function RoughImageGenerator(): JSX.Element {
         height: 16px;
         margin-top: -3px;
         background: #241a1c;
-        border: 1px solid #4a6b4f;
+        border: 1px solid #1c1315;
         border-radius: 8px;
         box-shadow: 0 0 0 1px #0c0708, 0 4px 10px rgba(0,0,0,0.5);
         cursor: pointer;
@@ -108,7 +108,7 @@ export default function RoughImageGenerator(): JSX.Element {
       }
       input[type="range"]::-moz-range-progress {
         height: 12px;
-        background: rgba(74,107,79,0.35);
+        background: rgba(212, 196, 193, 0.1);
         border: 1px solid #1c1315;
         border-radius: 10px 0 0 10px;
       }
@@ -116,7 +116,7 @@ export default function RoughImageGenerator(): JSX.Element {
         width: 16px;
         height: 16px;
         background: #241a1c;
-        border: 1px solid #4a6b4f;
+        border: 1px solid #1c1315;
         border-radius: 8px;
         box-shadow: 0 0 0 1px #0c0708, 0 4px 10px rgba(0,0,0,0.5);
         cursor: pointer;
@@ -203,10 +203,10 @@ export default function RoughImageGenerator(): JSX.Element {
   const [autoSpreadEnabled, setAutoSpreadEnabled] = useState(true);
   const [autoDots, setAutoDots] = useState(false);
   const [autoDotsEnabled, setAutoDotsEnabled] = useState(true);
-  const [autoDotsSpeed, setAutoDotsSpeed] = useState(defaults.autoDotsSpeed || 1);
+  const [autoDotsSpeed, setAutoDotsSpeed] = useState(1);
   const [autoShapes, setAutoShapes] = useState(false);
   const [autoShapesEnabled, setAutoShapesEnabled] = useState(true);
-  const [autoShapesSpeed, setAutoShapesSpeed] = useState(defaults.autoShapesSpeed || 1);
+  const [autoShapesSpeed, setAutoShapesSpeed] = useState(1);
   const [blendMode, setBlendMode] = useState(defaults.blendMode);
   const [panelMinimized, setPanelMinimized] = useState(false);
   const [showSpeedSettings, setShowSpeedSettings] = useState(false);
@@ -318,7 +318,6 @@ const [showVisualSettings, setShowVisualSettings] = useState(false);
       const mobile = window.innerWidth < 800;
       setIsMobile(mobile);
       if (!mobile && canvasContainerRef.current) {
-        const rect = canvasContainerRef.current.getBoundingClientRect();
         setPanelPos(prev => ({ x: 24, y: prev.y }));
       }
     };
@@ -1691,25 +1690,24 @@ return () => window.removeEventListener('resize', handleResize);
           </div>
         ))}
       </div>
+      {showStepControls && (
+        <div style={{ marginBottom: '12px' }}>
+          {[
+            { label: 'Spread Once', onClick: () => { colorSpread(); setIsSavingColor(false); } }
+          ].map(({ label, onClick }) => (
+            <div
+              key={label}
+              className="section-header"
+              onClick={onClick}
+            >
+              <div className="section-title">{label}</div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )}
 </div>
-
-{showOptions && showStepControls && (
-              <div style={{ marginBottom: '12px' }}>
-                {[
-                  { label: 'Spread Once', onClick: () => { colorSpread(); setIsSavingColor(false); } }
-                ].map(({ label, onClick }) => (
-                  <div
-                    key={label}
-                    className="section-header"
-                    onClick={onClick}
-                  >
-                    <div className="section-title">{label}</div>
-                  </div>
-                ))}
-              </div>
-            )}
 
             {showOptions && showSpeedSettings && (
               <div style={{ 
@@ -1742,7 +1740,7 @@ return () => window.removeEventListener('resize', handleResize);
                           max={max as number}
                           step={step as number}
                           value={value as number}
-                          onChange={(e) => (setter as any)(Number(e.target.value))}
+                          onChange={(e) => (setter as (value: number) => void)(Number(e.target.value))}
                         />
                       </div>
                     ))}
