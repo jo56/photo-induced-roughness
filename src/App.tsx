@@ -1597,6 +1597,8 @@ export default function RoughImageGenerator(): JSX.Element {
               </>
             )}
 
+            {showAutoControls && showOptions && <div className="section-divider"></div>}
+
             {showOptions && (
               <div style={{ marginBottom: '16px' }}>
                 {[
