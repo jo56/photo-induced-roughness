@@ -329,19 +329,17 @@ input[type="range"]::-webkit-slider-thumb:hover{
 }
 
 .auto-button{
-  padding:10px 20px;
-  background:var(--surface);
-  backdrop-filter:blur(10px);
-  border:1px solid var(--border-subtle);
-  color:var(--text-primary);
+  padding:4px 8px;
+  background:transparent;
+  border:none;
+  color:var(--text-dim);
   cursor:pointer;
-  transition:all 0.3s ease;
+  transition:all 0.2s ease;
   font-weight:400;
-  font-size:0.85rem;
+  font-size:0.7rem;
   text-transform:uppercase;
-  letter-spacing:0.025em;
-  border-radius:12px;
-  box-shadow:0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  letter-spacing:0.05em;
+  text-align:center;
 }
 
 .auto-button:disabled{
@@ -350,39 +348,32 @@ input[type="range"]::-webkit-slider-thumb:hover{
   background:var(--surface-deep);
 }
 
-.auto-button:not(:disabled):hover{
+.auto-button:not(:disabled):hover:not(.active){
   background:var(--surface-hover);
-  border-color:var(--border);
-  color:var(--text-primary);
-  transform:translateY(-2px);
-  box-shadow:0 8px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  color:var(--text-secondary);
 }
 
 .auto-button.active{
   background:var(--accent);
-  border-color:var(--accent);
   color:var(--text-primary);
-  box-shadow:0 8px 24px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 
 
 .auto-button-primary{
   background:var(--accent-subtle);
-  border-color:var(--accent);
   color:var(--text-primary);
   font-weight:500;
 }
 
-.auto-button-primary:not(:disabled):hover{
+.auto-button-primary:not(:disabled):hover:not(.active){
   background:var(--accent);
-  transform:translateY(-2px);
-  box-shadow:0 8px 24px rgba(255, 255, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  color:var(--text-primary);
 }
 
 .auto-button-primary.active{
   background:var(--accent-warm);
-  box-shadow:0 8px 32px rgba(255, 255, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  color:var(--text-primary);
 }
 
 /* Section Divider */
