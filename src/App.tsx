@@ -2125,7 +2125,6 @@ return () => window.removeEventListener('resize', handleResize);
                       <option value="flow">Flow</option>
                       <option value="jitter">Jitter</option>
                       <option value="vortex">Vortex</option>
-                      <option value="strobe">Strobe</option>
                       <option value="scramble">Scramble</option>
                       <option value="ripple">Ripple</option>
                     </select>
