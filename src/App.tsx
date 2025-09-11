@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 
-const GRID_COLOR = '#1e2820';
+const GRID_COLOR = '#2e1f20';
 
 function createEmptyGrid(rows: number, cols: number): number[][] {
   const g: number[][] = [];
@@ -37,7 +37,7 @@ function RuleEditor({ label, rules, onChange }: { label: string, rules: number[]
             <label style={{ fontSize: '0.85rem', fontWeight: 500, display: 'block', marginBottom: '4px' }}>{label}:</label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                 {numbers.map(num => (
-                    <label key={num} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', background: '#141b16', border: '1px solid #4a6b4f', padding: '4px 8px', borderRadius: '4px', userSelect: 'none' }}>
+                    <label key={num} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', background: '#241a1c', border: '1px solid #4a6b4f', padding: '4px 8px', borderRadius: '4px', userSelect: 'none' }}>
                         <input
                             type="checkbox"
                             checked={rules.includes(num)}
@@ -78,7 +78,7 @@ export default function RoughImageGenerator(): JSX.Element {
     rows: 375,
     cols: 375,
     showGrid: false,
-    backgroundColor: '#0a0f0b',
+    backgroundColor: '#0f0a0b',
     selectedColor: 1,
     spreadProbability: 0.3,
     autoSpreadSpeed: 3,
@@ -1441,12 +1441,12 @@ export default function RoughImageGenerator(): JSX.Element {
     <div style={{
       width: '100%',
       minHeight: '100vh',
-      background: 'radial-gradient(ellipse at center, #0d130e 0%, #0a0f0b 60%, #080c09 100%)',
+      background: 'radial-gradient(ellipse at center, #1a0f11 0%, #0f0a0b 60%, #0c0708 100%)',
       display: 'flex',
       flexDirection: isMobile ? 'column' : 'row',
       justifyContent: 'center',
       alignItems: 'center',
-      color: '#b8c4ba',
+      color: '#d4c4c1',
       gap: '20px'
     }}>
       <div
@@ -1457,11 +1457,11 @@ export default function RoughImageGenerator(): JSX.Element {
           top: '24px',
           bottom: '24px',
           width: '320px',
-          background: 'linear-gradient(160deg, #0e1610 0%, #080c09 100%)',
+          background: 'linear-gradient(160deg, #1a1214 0%, #0c0708 100%)',
           padding: '0',
           borderRadius: '0',
           border: 'none',
-          boxShadow: 'inset 0 0 0 1px #151a17, 0 0 0 1px #080c09, 0 8px 32px rgba(0,0,0,0.8)',
+          boxShadow: 'inset 0 0 0 1px #1c1315, 0 0 0 1px #0c0708, 0 8px 32px rgba(0,0,0,0.8)',
           overflow: 'hidden',
           zIndex: 10,
           backdropFilter: 'blur(24px)',
@@ -1471,8 +1471,8 @@ export default function RoughImageGenerator(): JSX.Element {
         <div
           style={{
             padding: '16px 20px',
-            background: '#080c09',
-            borderBottom: '1px solid #151a17',
+            background: '#0c0708',
+            borderBottom: '1px solid #1c1315',
             fontSize: '0.9rem',
             fontWeight: 400,
             letterSpacing: '0.1em',
@@ -1481,16 +1481,16 @@ export default function RoughImageGenerator(): JSX.Element {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            color: '#7a8a7c'
+            color: '#8a7a77'
           }}
         >
           <span>Rough Image Generator</span>
           <button
             onClick={() => setPanelMinimized(prev => !prev)}
             style={{
-              background: '#141b16',
-              border: '1px solid #151a17',
-              color: '#b8c4ba',
+              background: '#241a1c',
+              border: '1px solid #1c1315',
+              color: '#d4c4c1',
               cursor: 'pointer',
               fontSize: '0.8rem',
               width: '20px',
@@ -1520,7 +1520,7 @@ export default function RoughImageGenerator(): JSX.Element {
             opacity: panelMinimized ? 0 : 1,
             transition: 'opacity 0.3s ease',
             pointerEvents: panelMinimized ? 'none' : 'auto',
-            background: 'linear-gradient(180deg, transparent 0%, rgba(8, 12, 9, 0.3) 100%)'
+            background: 'linear-gradient(180deg, transparent 0%, rgba(12, 7, 8, 0.3) 100%)'
           }}>
             
             <div className="upload-area" onClick={() => document.getElementById('imageUpload')?.click()}>
@@ -1554,8 +1554,8 @@ export default function RoughImageGenerator(): JSX.Element {
                   style={{
                     padding: '6px 12px',
                     borderRadius: '6px',
-                    background: showAutoControls ? '#2d4a32' : '#141b16',
-                    color: '#b8c4ba',
+                    background: showAutoControls ? 'linear-gradient(135deg, #8b4a47 0%, #a15856 100%)' : '#241a1c',
+                    color: '#d4c4c1',
                     border: 'none',
                     cursor: 'pointer',
                     fontWeight: 'normal',
@@ -1569,8 +1569,8 @@ export default function RoughImageGenerator(): JSX.Element {
                   style={{
                     padding: '6px 12px',
                     borderRadius: '6px',
-                    background: showOptions ? '#2d4a32' : '#141b16',
-                    color: '#b8c4ba',
+                    background: showOptions ? 'linear-gradient(135deg, #8b4a47 0%, #a15856 100%)' : '#241a1c',
+                    color: '#d4c4c1',
                     border: 'none',
                     cursor: 'pointer',
                     fontWeight: 'normal',
@@ -1584,8 +1584,8 @@ export default function RoughImageGenerator(): JSX.Element {
                   style={{
                     padding: '6px 12px',
                     borderRadius: '6px',
-                    background: '#141b16',
-                    color: '#b8c4ba',
+                    background: '#241a1c',
+                    color: '#d4c4c1',
                     border: 'none',
                     cursor: 'pointer',
                     fontWeight: 'normal',
@@ -1609,11 +1609,11 @@ export default function RoughImageGenerator(): JSX.Element {
                       padding: '6px 12px',
                       borderRadius: '6px',
                       background: autoSpreading 
-                        ? '#141b16' 
+                        ? '#241a1c' 
                         : autoSpreadEnabled 
-                          ? '#141b16' 
-                          : '#2d4a32',
-                      color: '#b8c4ba',
+                          ? '#241a1c' 
+                          : 'linear-gradient(135deg, #8b4a47 0%, #a15856 100%)',
+                      color: '#d4c4c1',
                       border: 'none',
                       cursor: autoSpreadEnabled ? 'pointer' : 'not-allowed',
                       fontWeight: 'normal',
@@ -1647,8 +1647,8 @@ export default function RoughImageGenerator(): JSX.Element {
                       style={{
                         padding: '6px 12px',
                         borderRadius: '6px',
-                        background: enabled ? '#141b16' : '#2d4a32',
-                        color: '#b8c4ba',
+                        background: enabled ? '#241a1c' : 'linear-gradient(135deg, #8b4a47 0%, #a15856 100%)',
+                        color: '#d4c4c1',
                         border: 'none',
                         cursor: enabled ? 'pointer' : 'not-allowed',
                         fontWeight: 'normal',
@@ -1668,8 +1668,8 @@ export default function RoughImageGenerator(): JSX.Element {
                     style={{
                       padding: '6px 12px',
                       borderRadius: '6px',
-                      background: anyEnabled || isAnyRunning ? '#141b16' : '#2d4a32',
-                      color: '#b8c4ba',
+                      background: anyEnabled || isAnyRunning ? '#241a1c' : 'linear-gradient(135deg, #8b4a47 0%, #a15856 100%)',
+                      color: '#d4c4c1',
                       border: 'none',
                       cursor: anyEnabled || isAnyRunning ? 'pointer' : 'not-allowed',
                       fontWeight: 'normal',
@@ -1689,11 +1689,11 @@ export default function RoughImageGenerator(): JSX.Element {
             {showOptions && (
               <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexWrap: 'wrap' }}>
                 {[
-                  { label: 'Speed', onClick: () => setShowSpeedSettings(prev => !prev), bg: showSpeedSettings ? '#2d4a32' : '#141b16' },
-                  { label: 'Canvas', onClick: () => setShowCanvasSettings(prev => !prev), bg: showCanvasSettings ? '#2d4a32' : '#141b16' },
-                  { label: 'Visual', onClick: () => setShowVisualSettings(prev => !prev), bg: showVisualSettings ? '#2d4a32' : '#141b16' },
-                  { label: 'Generative', onClick: () => setShowGenerativeSettings(prev => !prev), bg: showGenerativeSettings ? '#2d4a32' : '#141b16' },
-                  { label: 'Steps', onClick: () => setShowStepControls(prev => !prev), bg: showStepControls ? '#2d4a32' : '#141b16' }
+                  { label: 'Speed', onClick: () => setShowSpeedSettings(prev => !prev), bg: showSpeedSettings ? 'linear-gradient(135deg, #8b4a47 0%, #a15856 100%)' : '#241a1c' },
+                  { label: 'Canvas', onClick: () => setShowCanvasSettings(prev => !prev), bg: showCanvasSettings ? 'linear-gradient(135deg, #8b4a47 0%, #a15856 100%)' : '#241a1c' },
+                  { label: 'Visual', onClick: () => setShowVisualSettings(prev => !prev), bg: showVisualSettings ? 'linear-gradient(135deg, #8b4a47 0%, #a15856 100%)' : '#241a1c' },
+                  { label: 'Generative', onClick: () => setShowGenerativeSettings(prev => !prev), bg: showGenerativeSettings ? 'linear-gradient(135deg, #8b4a47 0%, #a15856 100%)' : '#241a1c' },
+                  { label: 'Steps', onClick: () => setShowStepControls(prev => !prev), bg: showStepControls ? 'linear-gradient(135deg, #8b4a47 0%, #a15856 100%)' : '#241a1c' }
                 ].map(({ label, onClick, bg }) => (
                   <button
                     key={label}
@@ -1702,7 +1702,7 @@ export default function RoughImageGenerator(): JSX.Element {
                       padding: '6px 12px',
                       borderRadius: '6px',
                       background: bg,
-                      color: '#b8c4ba',
+                      color: '#d4c4c1',
                       border: 'none',
                       cursor: 'pointer',
                       fontWeight: 'normal',
@@ -1727,8 +1727,8 @@ export default function RoughImageGenerator(): JSX.Element {
                     style={{
                       padding: '6px 12px',
                       borderRadius: '6px',
-                      background: '#141b16',
-                      color: '#b8c4ba',
+                      background: '#241a1c',
+                      color: '#d4c4c1',
                       border: 'none',
                       cursor: 'pointer',
                       fontWeight: 'normal',
@@ -1895,8 +1895,8 @@ export default function RoughImageGenerator(): JSX.Element {
                       style={{ 
                         padding: '4px 8px', 
                         borderRadius: '6px', 
-                        background: '#141b16', 
-                        color: '#b8c4ba', 
+                        background: '#241a1c', 
+                        color: '#d4c4c1', 
                         border: 'none',
                         width: '100%'
                       }}
@@ -1922,8 +1922,8 @@ export default function RoughImageGenerator(): JSX.Element {
                     style={{
                       padding: '6px 12px',
                       borderRadius: '6px',
-                      background: '#141b16',
-                      color: '#b8c4ba',
+                      background: '#241a1c',
+                      color: '#d4c4c1',
                       border: 'none',
                       cursor: 'pointer',
                       alignSelf: 'flex-end',
@@ -1936,7 +1936,7 @@ export default function RoughImageGenerator(): JSX.Element {
                 </div>
                 
                 {spreadPattern === 'ripple' && (
-                  <div style={{background: '#0e1610', border: '1px solid #151a17', padding: '8px', borderRadius: '6px'}}>
+                  <div style={{background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)', border: '1px solid #1c1315', padding: '8px', borderRadius: '6px'}}>
                       <div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                               <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Ripple Chance:</label>
@@ -1948,7 +1948,7 @@ export default function RoughImageGenerator(): JSX.Element {
                 )}
 
                 {spreadPattern === 'scramble' && (
-                  <div style={{background: '#0e1610', border: '1px solid #151a17', padding: '8px', borderRadius: '6px'}}>
+                  <div style={{background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)', border: '1px solid #1c1315', padding: '8px', borderRadius: '6px'}}>
                       <div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                               <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Swaps per Step:</label>
@@ -1960,7 +1960,7 @@ export default function RoughImageGenerator(): JSX.Element {
                 )}
                 
                 {spreadPattern === 'vortex' && (
-                  <div style={{background: '#0e1610', border: '1px solid #151a17', padding: '8px', borderRadius: '6px'}}>
+                  <div style={{background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)', border: '1px solid #1c1315', padding: '8px', borderRadius: '6px'}}>
                       <div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                               <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Vortex Count:</label>
@@ -1972,7 +1972,7 @@ export default function RoughImageGenerator(): JSX.Element {
                 )}
 
                 {spreadPattern === 'strobe' && (
-                  <div style={{background: '#0e1610', border: '1px solid #151a17', padding: '8px', borderRadius: '6px'}}>
+                  <div style={{background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)', border: '1px solid #1c1315', padding: '8px', borderRadius: '6px'}}>
                       <div style={{ marginBottom: '8px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                               <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Expand Threshold:</label>
@@ -1991,7 +1991,7 @@ export default function RoughImageGenerator(): JSX.Element {
                 )}
                 
                 {spreadPattern === 'jitter' && (
-                  <div style={{background: '#0e1610', border: '1px solid #151a17', padding: '8px', borderRadius: '6px'}}>
+                  <div style={{background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)', border: '1px solid #1c1315', padding: '8px', borderRadius: '6px'}}>
                       <div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                               <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Jitter Chance:</label>
@@ -2003,13 +2003,13 @@ export default function RoughImageGenerator(): JSX.Element {
                 )}
                 
                 {spreadPattern === 'flow' && (
-                  <div style={{background: '#0e1610', border: '1px solid #151a17', padding: '8px', borderRadius: '6px'}}>
+                  <div style={{background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)', border: '1px solid #1c1315', padding: '8px', borderRadius: '6px'}}>
                       <div style={{ marginBottom: '10px' }}>
                           <label style={{ fontSize: '0.85rem', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Flow Direction:</label>
                           <select
                               value={flowDirection}
                               onChange={(e) => setFlowDirection(e.target.value as any)}
-                              style={{ padding: '4px 8px', borderRadius: '6px', background: '#141b16', color: '#b8c4ba', border: 'none', width: '100%' }}
+                              style={{ padding: '4px 8px', borderRadius: '6px', background: '#241a1c', color: '#d4c4c1', border: 'none', width: '100%' }}
                           >
                               <option value="down">Down</option>
                               <option value="up">Up</option>
@@ -2028,7 +2028,7 @@ export default function RoughImageGenerator(): JSX.Element {
                 )}
 
                 {spreadPattern === 'vein' && (
-                  <div style={{background: '#0e1610', border: '1px solid #151a17', padding: '8px', borderRadius: '6px'}}>
+                  <div style={{background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)', border: '1px solid #1c1315', padding: '8px', borderRadius: '6px'}}>
                     <div style={{ marginBottom: '8px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                           <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Seek Strength:</label>
@@ -2047,7 +2047,7 @@ export default function RoughImageGenerator(): JSX.Element {
                 )}
 
                 {spreadPattern === 'crystallize' && (
-                  <div style={{background: '#0e1610', border: '1px solid #151a17', padding: '8px', borderRadius: '6px'}}>
+                  <div style={{background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)', border: '1px solid #1c1315', padding: '8px', borderRadius: '6px'}}>
                     <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                           <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Growth Threshold:</label>
@@ -2059,7 +2059,7 @@ export default function RoughImageGenerator(): JSX.Element {
                 )}
                 
                 {spreadPattern === 'erosion' && (
-                  <div style={{background: '#0e1610', border: '1px solid #151a17', padding: '8px', borderRadius: '6px'}}>
+                  <div style={{background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)', border: '1px solid #1c1315', padding: '8px', borderRadius: '6px'}}>
                      <div style={{ marginBottom: '8px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                           <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Erosion Rate:</label>
@@ -2078,13 +2078,13 @@ export default function RoughImageGenerator(): JSX.Element {
                 )}
 
                 {spreadPattern === 'random' && (
-                    <div style={{background: '#0e1610', border: '1px solid #151a17', padding: '8px', borderRadius: '6px'}}>
+                    <div style={{background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)', border: '1px solid #1c1315', padding: '8px', borderRadius: '6px'}}>
                         <div style={{ marginBottom: '10px' }}>
                             <label style={{ fontSize: '0.85rem', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Walk Mode:</label>
                             <select
                                 value={randomWalkMode}
                                 onChange={(e) => setRandomWalkMode(e.target.value as any)}
-                                style={{ padding: '4px 8px', borderRadius: '6px', background: '#141b16', color: '#b8c4ba', border: 'none', width: '100%' }}
+                                style={{ padding: '4px 8px', borderRadius: '6px', background: '#241a1c', color: '#d4c4c1', border: 'none', width: '100%' }}
                             >
                                 <option value="any">8 Directions (Any)</option>
                                 <option value="cardinal">4 Directions (Cardinal)</option>
@@ -2105,7 +2105,7 @@ export default function RoughImageGenerator(): JSX.Element {
                 )}
 
                 {spreadPattern === 'conway' && (
-                  <div style={{background: '#0e1610', border: '1px solid #151a17', padding: '8px', borderRadius: '6px'}}>
+                  <div style={{background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)', border: '1px solid #1c1315', padding: '8px', borderRadius: '6px'}}>
                     <RuleEditor label="Survive Counts" rules={conwayRules.survive} onChange={(newSurvive) => setConwayRules(r => ({ ...r, survive: newSurvive }))} />
 
                     <RuleEditor label="Birth Counts" rules={conwayRules.born} onChange={(newBorn) => setConwayRules(r => ({ ...r, born: newBorn }))} />
@@ -2113,7 +2113,7 @@ export default function RoughImageGenerator(): JSX.Element {
                 )}
                 
                 {spreadPattern === 'tendrils' && (
-                  <div style={{background: '#0e1610', border: '1px solid #151a17', padding: '8px', borderRadius: '6px'}}>
+                  <div style={{background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)', border: '1px solid #1c1315', padding: '8px', borderRadius: '6px'}}>
                      <RuleEditor label="Survive Counts" rules={tendrilsRules.survive} onChange={(newSurvive) => setTendrilsRules(r => ({ ...r, survive: newSurvive }))} />
 
                      <RuleEditor label="Birth Counts" rules={tendrilsRules.born} onChange={(newBorn) => setTendrilsRules(r => ({ ...r, born: newBorn }))} />
@@ -2121,7 +2121,7 @@ export default function RoughImageGenerator(): JSX.Element {
                 )}
                 
                 {spreadPattern === 'pulse' && (
-                    <div style={{background: '#0e1610', border: '1px solid #151a17', padding: '8px', borderRadius: '6px'}}>
+                    <div style={{background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)', border: '1px solid #1c1315', padding: '8px', borderRadius: '6px'}}>
                         <div style={{ marginBottom: '8px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                             <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Pulse Speed:</label>
@@ -2138,7 +2138,7 @@ export default function RoughImageGenerator(): JSX.Element {
                             <select
                                 value={pulseDirection}
                                 onChange={(e) => setPulseDirection(e.target.value as any)}
-                                style={{ padding: '4px 8px', borderRadius: '6px', background: '#141b16', color: '#b8c4ba', border: 'none', width: '100%' }}
+                                style={{ padding: '4px 8px', borderRadius: '6px', background: '#241a1c', color: '#d4c4c1', border: 'none', width: '100%' }}
                             >
                                 <option value="top-left">Top-Left</option>
                                 <option value="top-right">Top-Right</option>
@@ -2161,13 +2161,13 @@ export default function RoughImageGenerator(): JSX.Element {
                 )}
 
                 {spreadPattern === 'directional' && (
-                    <div style={{background: '#0e1610', border: '1px solid #151a17', padding: '8px', borderRadius: '6px'}}>
+                    <div style={{background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)', border: '1px solid #1c1315', padding: '8px', borderRadius: '6px'}}>
                       <div style={{ marginBottom: '10px' }}>
                           <label style={{ fontSize: '0.85rem', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Bias Direction:</label>
                           <select
                               value={directionalBias}
                               onChange={(e) => setDirectionalBias(e.target.value as any)}
-                              style={{ padding: '4px 8px', borderRadius: '6px', background: '#141b16', color: '#b8c4ba', border: 'none', width: '100%' }}
+                              style={{ padding: '4px 8px', borderRadius: '6px', background: '#241a1c', color: '#d4c4c1', border: 'none', width: '100%' }}
                           >
                                 <option value="up">Up</option>
                                 <option value="down">Down</option>
@@ -2207,8 +2207,8 @@ export default function RoughImageGenerator(): JSX.Element {
                     style={{ 
                       padding: '4px 8px', 
                       borderRadius: '6px', 
-                      background: '#141b16', 
-                      color: '#b8c4ba', 
+                      background: '#241a1c', 
+                      color: '#d4c4c1', 
                       border: 'none',
                       width: '100%'
                     }}
@@ -2263,7 +2263,7 @@ export default function RoughImageGenerator(): JSX.Element {
             cursor: 'default', 
             background: backgroundColor,
             border: 'none',
-            boxShadow: 'inset 0 0 0 1px #151a17, inset 2px 2px 8px rgba(0,0,0,0.8), inset -1px -1px 4px #0e1610',
+            boxShadow: 'inset 0 0 0 1px #1c1315, inset 2px 2px 8px rgba(0,0,0,0.8), inset -1px -1px 4px #1a1214',
             clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)'
           }}
         />
@@ -2277,7 +2277,7 @@ export default function RoughImageGenerator(): JSX.Element {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(8, 12, 9, 0.95)',
+          backgroundColor: 'rgba(12, 7, 8, 0.95)',
           backdropFilter: 'blur(16px)',
           display: 'flex',
           justifyContent: 'center',
@@ -2290,9 +2290,9 @@ export default function RoughImageGenerator(): JSX.Element {
             borderRadius: '12px',
             border: '1px solid #333',
             maxWidth: '500px',
-            color: '#b8c4ba'
+            color: '#d4c4c1'
           }}>
-            <h3 style={{ marginTop: 0, color: '#b8c4ba', fontSize: '18px' }}>Large Image Detected</h3>
+            <h3 style={{ marginTop: 0, color: '#d4c4c1', fontSize: '18px' }}>Large Image Detected</h3>
             <p style={{ marginBottom: '16px', lineHeight: '1.5' }}>
               Your image is {pendingImage?.width} × {pendingImage?.height} pixels, which may be too large for comfortable viewing. 
               A grid this size would create {pendingImage?.width && pendingImage?.height ? (pendingImage.width * pendingImage.height).toLocaleString() : 'many'} cells.
@@ -2307,7 +2307,7 @@ export default function RoughImageGenerator(): JSX.Element {
                 style={{
                   padding: '10px 20px',
                   backgroundColor: '#0066cc',
-                  color: '#b8c4ba',
+                  color: '#d4c4c1',
                   border: 'none',
                   borderRadius: '6px',
                   cursor: 'pointer',
@@ -2322,7 +2322,7 @@ export default function RoughImageGenerator(): JSX.Element {
                 style={{
                   padding: '10px 20px',
                   backgroundColor: '#666',
-                  color: '#b8c4ba',
+                  color: '#d4c4c1',
                   border: 'none',
                   borderRadius: '6px',
                   cursor: 'pointer',
