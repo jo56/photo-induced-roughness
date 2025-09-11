@@ -89,9 +89,53 @@ function CompactUploadButton({ imageFile, onClick }: { imageFile: File | null; o
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: '1.2rem'
+        position: 'relative'
       }}>
-        📁
+        <div style={{
+          width: '18px',
+          height: '14px',
+          border: '2px solid var(--text-secondary)',
+          borderRadius: '2px',
+          position: 'relative',
+          background: 'transparent'
+        }}>
+          <div style={{
+            position: 'absolute',
+            top: '-6px',
+            left: '3px',
+            right: '3px',
+            height: '4px',
+            background: 'var(--text-secondary)',
+            borderRadius: '2px 2px 0 0'
+          }}></div>
+          <div style={{
+            position: 'absolute',
+            top: '2px',
+            left: '2px',
+            right: '2px',
+            height: '1px',
+            background: 'var(--text-secondary)',
+            opacity: 0.6
+          }}></div>
+          <div style={{
+            position: 'absolute',
+            top: '5px',
+            left: '2px',
+            right: '2px',
+            height: '1px',
+            background: 'var(--text-secondary)',
+            opacity: 0.6
+          }}></div>
+          <div style={{
+            position: 'absolute',
+            top: '8px',
+            left: '2px',
+            width: '6px',
+            height: '1px',
+            background: 'var(--text-secondary)',
+            opacity: 0.6
+          }}></div>
+        </div>
       </div>
       <div>
         <div style={{ 
