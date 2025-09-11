@@ -2220,7 +2220,7 @@ return () => window.removeEventListener('resize', handleResize);
                 onClick={handleResizeAccept}
                 style={{
                   padding: '10px 20px',
-                  backgroundColor: '#ff6b6b',
+                  backgroundColor: '#666',
                   color: '#ffffff',
                   border: 'none',
                   borderRadius: '6px',
