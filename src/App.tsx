@@ -210,7 +210,7 @@ export default function RoughImageGenerator(): JSX.Element {
   const [blendMode, setBlendMode] = useState(defaults.blendMode);
   const [panelMinimized, setPanelMinimized] = useState(false);
   const [showSpeedSettings, setShowSpeedSettings] = useState(false);
-const [showVisualSettings, setShowVisualSettings] = useState(false);
+  const [showVisualSettings, setShowVisualSettings] = useState(false);
   const [showGenerativeSettings, setShowGenerativeSettings] = useState(false);
   const [showStepControls, setShowStepControls] = useState(false);
   const [showAutoControls, setShowAutoControls] = useState(true);
@@ -1690,30 +1690,6 @@ return () => window.removeEventListener('resize', handleResize);
           </div>
         ))}
       </div>
-      {showStepControls && (
-        <div style={{ 
-            background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)', 
-            border: '1px solid #1c1315', 
-            padding: '8px', 
-            borderRadius: '6px',
-            marginBottom: '12px'
-        }}>
-          {[
-            { label: 'Spread Once', onClick: () => { colorSpread(); setIsSavingColor(false); } },
-            { label: 'Add One Dot', onClick: () => { addRandomDots(); setIsSavingColor(false); } },
-            { label: 'Add One Shape', onClick: () => { addRandomShapes(); setIsSavingColor(false); } }
-          ].map(({ label, onClick }, index, arr) => (
-            <div
-              key={label}
-              className="section-header"
-              onClick={onClick}
-              style={{ marginBottom: index === arr.length - 1 ? 0 : '4px' }}
-            >
-              <div className="section-title">{label}</div>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   )}
 </div>
@@ -1755,10 +1731,26 @@ return () => window.removeEventListener('resize', handleResize);
                     ))}
                   </div>
                 )}
+              </div>
+            )}
 
-
-
-
+            {showOptions && showStepControls && (
+              <div style={{ marginBottom: '12px' }}>
+                <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(3, 1fr)', 
+                    gap: '8px' 
+                }}>
+                  <div className="section-header" onClick={() => { colorSpread(); setIsSavingColor(false); }}>
+                    <div className="section-title">Spread</div>
+                  </div>
+                  <div className="section-header" onClick={() => { addRandomDots(); setIsSavingColor(false); }}>
+                    <div className="section-title">Add Dot</div>
+                  </div>
+                  <div className="section-header" onClick={() => { addRandomShapes(); setIsSavingColor(false); }}>
+                    <div className="section-title">Add Shape</div>
+                  </div>
+                </div>
               </div>
             )}
             
