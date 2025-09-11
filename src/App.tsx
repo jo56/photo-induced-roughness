@@ -1107,8 +1107,12 @@ return () => window.removeEventListener('resize', handleResize);
                 let r_start = 0, r_end = currentRows, r_inc = 1;
                 let c_start = 0, c_end = currentCols, c_inc = 1;
 
+                // Set iteration order to process in the opposite direction of flow
+                // This prevents pixels from being processed multiple times in the same frame
                 if (dir === 'up') { r_start = currentRows - 1; r_end = -1; r_inc = -1; }
+                else if (dir === 'down') { r_start = currentRows - 1; r_end = -1; r_inc = -1; }
                 if (dir === 'left') { c_start = currentCols - 1; c_end = -1; c_inc = -1; }
+                else if (dir === 'right') { c_start = currentCols - 1; c_end = -1; c_inc = -1; }
 
                 for (let r = r_start; r !== r_end; r += r_inc) {
                     for (let c = c_start; c !== c_end; c += c_inc) {
@@ -1123,9 +1127,11 @@ return () => window.removeEventListener('resize', handleResize);
                             const nr = r + dr;
                             const nc = c + dc;
 
-                            if (nr >= 0 && nr < currentRows && nc >= 0 && nc < currentCols && g[nr][nc] === 0) {
-                                if (!changes.has(`${nr},${nc}`)) {
-                                    changes.set(`${nr},${nc}`, color);
+                            // Allow flowing into any space within bounds (not just empty spaces)
+                            if (nr >= 0 && nr < currentRows && nc >= 0 && nc < currentCols) {
+                                const key = `${nr},${nc}`;
+                                if (!changes.has(key)) {
+                                    changes.set(key, color);
                                     empties.add(`${r},${c}`);
                                 }
                             }
@@ -1135,7 +1141,7 @@ return () => window.removeEventListener('resize', handleResize);
 
                 empties.forEach(key => {
                     const [r, c] = key.split(',').map(Number);
-                    if (!changes.has(key)) ng[r][c] = 0;
+                    ng[r][c] = 0;
                 });
                 changes.forEach((color, key) => {
                     const [r, c] = key.split(',').map(Number);
