@@ -1574,7 +1574,7 @@ export default function RoughImageGenerator(): JSX.Element {
 
             {showAutoControls && (
               <>
-                <div style={{ marginBottom: '16px' }}>
+                <div style={{ marginBottom: '12px' }}>
                   {[
                     { label: autoSpreading ? 'Stop Spread' : 'Start Spread', isActive: autoSpreading, onClick: () => { toggleAutoSpread(); setIsSavingColor(false); }, enabled: autoSpreadEnabled },
                     { label: autoDots ? 'Stop Dots' : 'Start Dots', isActive: autoDots, onClick: () => { toggleAutoDots(); setIsSavingColor(false); }, enabled: autoDotsEnabled },
@@ -1600,7 +1600,7 @@ export default function RoughImageGenerator(): JSX.Element {
             {showAutoControls && showOptions && <div className="section-divider"></div>}
 
             {showOptions && (
-              <div style={{ marginBottom: '16px' }}>
+              <div style={{ marginBottom: '12px' }}>
                 {[
                   { label: 'Speed', isActive: showSpeedSettings, onClick: () => setShowSpeedSettings(prev => !prev) },
                   { label: 'Canvas', isActive: showCanvasSettings, onClick: () => setShowCanvasSettings(prev => !prev) },
@@ -1620,7 +1620,7 @@ export default function RoughImageGenerator(): JSX.Element {
             )}
             
             {showOptions && showStepControls && (
-              <div style={{ marginBottom: '16px' }}>
+              <div style={{ marginBottom: '12px' }}>
                 {[
                   { label: 'Spread Once', onClick: () => { colorSpread(); setIsSavingColor(false); } }
                 ].map(({ label, onClick }) => (
