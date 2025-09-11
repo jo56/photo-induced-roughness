@@ -1557,19 +1557,14 @@ return () => window.removeEventListener('resize', handleResize);
           <button
             onClick={() => setPanelMinimized(prev => !prev)}
             style={{
-              background: '#241a1c',
-              border: '1px solid #1c1315',
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
               color: '#d4c4c1',
               cursor: 'pointer',
-              fontSize: '0.8rem',
-              width: '20px',
-              height: '20px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '0',
-              marginLeft: '8px',
-              transition: 'all 0.2s ease'
+              fontSize: '1.2rem',
+              padding: '0 8px',
+              transition: 'all 0.2s ease',
             }}
           >
             {panelMinimized ? '+' : '-'}
@@ -1639,14 +1634,12 @@ return () => window.removeEventListener('resize', handleResize);
               </div>
             </div>
 
-
-
             
 <div style={{ 
   display: 'grid', 
   gridTemplateColumns: (showAutoControls && showOptions) ? 'repeat(2, 1fr)' : '1fr',
   gap: '12px',
-  marginBottom: '12px'
+  margin: '20px 0 12px 0'
 }}>
   {showAutoControls && (
     <div>
@@ -1693,6 +1686,38 @@ return () => window.removeEventListener('resize', handleResize);
     </div>
   )}
 </div>
+            
+            {showOptions && (showStepControls || showSpeedSettings || showVisualSettings || showGenerativeSettings) && (
+              <div style={{
+                height: '1px',
+                width: '100%',
+                background: 'linear-gradient(to right, transparent, rgba(212, 196, 193, 0.15), transparent)',
+                margin: '16px 0 20px 0'
+              }}></div>
+            )}
+
+            {showOptions && showStepControls && (
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block', fontSize: '0.9rem', color: '#e5e7eb' }}>
+                  Step Controls
+                </label>
+                <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(3, 1fr)', 
+                    gap: '8px' 
+                }}>
+                  <div className="section-header" onClick={() => { colorSpread(); setIsSavingColor(false); }}>
+                    <div className="section-title">Spread</div>
+                  </div>
+                  <div className="section-header" onClick={() => { addRandomDots(); setIsSavingColor(false); }}>
+                    <div className="section-title">Add Dot</div>
+                  </div>
+                  <div className="section-header" onClick={() => { addRandomShapes(); setIsSavingColor(false); }}>
+                    <div className="section-title">Add Shape</div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {showOptions && showSpeedSettings && (
               <div style={{ 
@@ -1731,26 +1756,6 @@ return () => window.removeEventListener('resize', handleResize);
                     ))}
                   </div>
                 )}
-              </div>
-            )}
-
-            {showOptions && showStepControls && (
-              <div style={{ marginBottom: '12px' }}>
-                <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: 'repeat(3, 1fr)', 
-                    gap: '8px' 
-                }}>
-                  <div className="section-header" onClick={() => { colorSpread(); setIsSavingColor(false); }}>
-                    <div className="section-title">Spread</div>
-                  </div>
-                  <div className="section-header" onClick={() => { addRandomDots(); setIsSavingColor(false); }}>
-                    <div className="section-title">Add Dot</div>
-                  </div>
-                  <div className="section-header" onClick={() => { addRandomShapes(); setIsSavingColor(false); }}>
-                    <div className="section-title">Add Shape</div>
-                  </div>
-                </div>
               </div>
             )}
             
