@@ -1,6 +1,6 @@
 {
-  "name": "painting-with-roughness",
-  "short_name": "Painting Roughness",
+  "name": "Induced Roughness",
+  "short_name": "Induced Roughness",
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",
