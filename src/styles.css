@@ -3,10 +3,10 @@
 --bg:#0f0f23;
 --bg-secondary:#1a1a2e;
 --panel:rgba(255, 255, 255, 0.05);
---accent:#64ffda;
---accent-hover:#4fc3f7;
---accent-subtle:#26a69a;
---accent-warm:#80cbc4;
+--accent:rgba(255, 255, 255, 0.3);
+--accent-hover:rgba(255, 255, 255, 0.4);
+--accent-subtle:rgba(255, 255, 255, 0.25);
+--accent-warm:rgba(255, 255, 255, 0.35);
 --muted:rgba(255, 255, 255, 0.1);
 --muted-light:rgba(255, 255, 255, 0.15);
 --text-primary:rgba(255, 255, 255, 0.9);
@@ -17,15 +17,15 @@
 --surface-deep:rgba(0, 0, 0, 0.3);
 --border:rgba(255, 255, 255, 0.2);
 --border-subtle:rgba(255, 255, 255, 0.1);
---glow:#64ffda;
+--glow:rgba(255, 255, 255, 0.3);
 --copper:#ff7043;
 }
 *{box-sizing:border-box}
 html,body,#root{height:100%;margin:0;font-family:'SF Pro Display','Segoe UI',system-ui,sans-serif;font-weight:300}
 body{
   background:
-    radial-gradient(ellipse at top left, rgba(100, 255, 218, 0.1) 0%, transparent 50%),
-    radial-gradient(ellipse at bottom right, rgba(255, 112, 67, 0.1) 0%, transparent 50%),
+    radial-gradient(ellipse at top left, rgba(255, 255, 255, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom right, rgba(255, 112, 67, 0.05) 0%, transparent 50%),
     radial-gradient(ellipse at center, rgba(26, 26, 46, 0.8) 0%, var(--bg) 70%),
     linear-gradient(135deg, var(--bg) 0%, var(--bg-secondary) 100%);
   background-attachment: fixed;
@@ -106,7 +106,7 @@ canvas{
     box-shadow:
       0 20px 80px rgba(0, 0, 0, 0.5),
       inset 0 1px 0 rgba(255, 255, 255, 0.1),
-      0 0 40px rgba(100, 255, 218, 0.1);
+      0 0 40px rgba(255, 255, 255, 0.05);
   }
 }
 .info{color:var(--text-dim);font-size:11px;font-weight:400;letter-spacing:0.05em;text-transform:uppercase}
@@ -144,7 +144,7 @@ canvas{
   border-color:var(--accent);
   background: var(--accent-subtle);
   transform:translateY(-2px);
-  box-shadow:0 8px 32px rgba(100, 255, 218, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  box-shadow:0 8px 32px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 .section-header::before{
@@ -234,7 +234,7 @@ input[type="range"]::-webkit-slider-thumb:hover{
   background: var(--accent);
   border-color:var(--accent);
   transform:scale(1.2);
-  box-shadow:0 6px 20px rgba(100, 255, 218, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  box-shadow:0 6px 20px rgba(255, 255, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 .toggle-group{
