@@ -1484,7 +1484,7 @@ export default function RoughImageGenerator(): JSX.Element {
             color: '#8a7a77'
           }}
         >
-          <span>Rough Image Generator</span>
+          <span>Induced Roughness</span>
           <button
             onClick={() => setPanelMinimized(prev => !prev)}
             style={{
