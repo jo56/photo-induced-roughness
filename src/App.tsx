@@ -91,13 +91,13 @@ function CompactUploadButton({ imageFile, onClick }: { imageFile: File | null; o
         justifyContent: 'center',
         fontSize: '1.2rem'
       }}>
-        📎
+        📁
       </div>
       <div>
         <div style={{ 
           fontWeight: 500, 
           fontSize: '0.85rem', 
-          color: 'var(--text-primary)',
+          color: imageFile ? 'var(--text-primary)' : 'var(--text-secondary)',
           marginBottom: '2px'
         }}>
           {imageFile ? imageFile.name : 'Choose Image'}
