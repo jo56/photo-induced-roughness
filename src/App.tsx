@@ -1356,7 +1356,6 @@ return () => window.removeEventListener('resize', handleResize);
   };
 
   const isAnyRunning = autoSpreading || autoDots || autoShapes;
-  const anyEnabled = autoSpreadEnabled || autoDotsEnabled || autoShapesEnabled;
 
   const startAllEnabled = () => {
     if (autoSpreadEnabled && !autoSpreading) {
@@ -1689,7 +1688,7 @@ return () => window.removeEventListener('resize', handleResize);
           { label: autoSpreading ? 'Stop Spread' : 'Start Spread', isActive: autoSpreading, onClick: () => { toggleAutoSpread(); setIsSavingColor(false); }, enabled: autoSpreadEnabled },
           { label: autoDots ? 'Stop Dots' : 'Start Dots', isActive: autoDots, onClick: () => { toggleAutoDots(); setIsSavingColor(false); }, enabled: autoDotsEnabled },
           { label: autoShapes ? 'Stop Shapes' : 'Start Shapes', isActive: autoShapes, onClick: () => { toggleAutoShapes(); setIsSavingColor(false); }, enabled: autoShapesEnabled },
-          { label: isAnyRunning ? 'Stop All' : 'Start All', isActive: isAnyRunning, onClick: () => { isAnyRunning ? stopAll() : startAllEnabled(); setIsSavingColor(false); }, enabled: anyEnabled || isAnyRunning }
+          { label: isAnyRunning ? 'Stop All' : 'Start All', isActive: isAnyRunning, onClick: () => { isAnyRunning ? stopAll() : startAllEnabled(); }, enabled: autoSpreadEnabled || autoDotsEnabled || autoShapesEnabled || isAnyRunning }
         ].map(({ label, isActive, onClick, enabled }) => (
           <div
             key={label}
@@ -1745,16 +1744,16 @@ return () => window.removeEventListener('resize', handleResize);
                 <div style={{ 
                     display: 'grid', 
                     gridTemplateColumns: 'repeat(3, 1fr)', 
-                    gap: '8px' 
+                    gap: '6px' 
                 }}>
                   <div className="section-header" onClick={() => { colorSpread(); setIsSavingColor(false); }}>
-                    <div className="section-title" style={{ fontSize: '0.8rem', padding: '10px 4px' }}>Spread</div>
+                    <div className="section-title" style={{ fontSize: '0.85rem' }}>Spread</div>
                   </div>
                   <div className="section-header" onClick={() => { addRandomDots(); setIsSavingColor(false); }}>
-                    <div className="section-title" style={{ fontSize: '0.8rem', padding: '10px 4px' }}>Add Dot</div>
+                    <div className="section-title" style={{ fontSize: '0.85rem' }}>Add Dot</div>
                   </div>
                   <div className="section-header" onClick={() => { addRandomShapes(); setIsSavingColor(false); }}>
-                    <div className="section-title" style={{ fontSize: '0.8rem', padding: '10px 4px' }}>Add Shape</div>
+                    <div className="section-title" style={{ fontSize: '0.85rem' }}>Add Shape</div>
                   </div>
                 </div>
               </div>
@@ -2221,8 +2220,8 @@ return () => window.removeEventListener('resize', handleResize);
                 onClick={handleResizeAccept}
                 style={{
                   padding: '10px 20px',
-                  backgroundColor: '#666',
-                  color: '#d4c4c1',
+                  backgroundColor: '#ff6b6b',
+                  color: '#ffffff',
                   border: 'none',
                   borderRadius: '6px',
                   cursor: 'pointer',
