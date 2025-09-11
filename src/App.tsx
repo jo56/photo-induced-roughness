@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 
-const GRID_COLOR = '#27272a';
+const GRID_COLOR = '#2e1f20';
 
 function createEmptyGrid(rows: number, cols: number): number[][] {
   const g: number[][] = [];
@@ -31,13 +31,11 @@ function RuleEditor({ label, rules, onChange }: { label: string, rules: number[]
             : [...rules, num];
         onChange(newRules.sort((a, b) => a - b));
     };
-
-    return (
-        <div style={{ marginBottom: '8px' }}>
-            <label style={{ fontSize: '0.85rem', fontWeight: 500, display: 'block', marginBottom: '4px' }}>{label}:</label>
+return (
+        <div style={{ marginBottom: '8px' }}><label style={{ fontSize: '0.85rem', fontWeight: 500, display: 'block', marginBottom: '4px' }}>{label}:</label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                 {numbers.map(num => (
-                    <label key={num} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', background: '#404040', padding: '4px 8px', borderRadius: '4px', userSelect: 'none' }}>
+                    <label key={num} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', background: '#241a1c', border: '1px solid #1c1315', padding: '4px 8px', borderRadius: '4px', userSelect: 'none' }}>
                         <input
                             type="checkbox"
                             checked={rules.includes(num)}
@@ -55,9 +53,252 @@ function RuleEditor({ label, rules, onChange }: { label: string, rules: number[]
 type Direction = 'up' | 'down' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 type SpreadPattern = 'random' | 'conway' | 'pulse' | 'directional' | 'tendrils' | 'vein' | 'crystallize' | 'erosion' | 'flow' | 'jitter' | 'vortex' | 'strobe' | 'scramble' | 'ripple';
 
+// Upload Button Component
+function CompactUploadButton({ imageFile, onClick }: { imageFile: File | null; onClick: () => void }) {
+  const [isHovered, setIsHovered] = useState(false);
+  
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        background: 'var(--surface)',
+        backdropFilter: 'blur(10px)',
+        border: '1px solid var(--border-subtle)',
+        borderRadius: '8px',
+        padding: '12px 16px',
+        cursor: 'pointer',
+        marginBottom: '20px',
+        userSelect: 'none',
+        transition: 'all 0.3s ease',
+        boxShadow: isHovered
+          ? '0 8px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15)'
+          : '0 2px 8px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+        transform: isHovered ? 'translateY(-1px)' : 'translateY(0px)'
+      }}
+      onClick={onClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div style={{
+        width: '32px',
+        height: '32px',
+        background: 'var(--accent-subtle)',
+        borderRadius: '6px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative'
+      }}>
+        <div style={{
+          width: '18px',
+          height: '18px',
+          position: 'relative'
+        }}>
+          {/* Center dot */}
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            width: '2px',
+            height: '2px',
+            background: 'var(--text-secondary)',
+            borderRadius: '50%',
+            transform: 'translate(-50%, -50%)'
+          }}></div>
+          
+          {/* Spiral arms */}
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            width: '12px',
+            height: '1px',
+            background: 'var(--text-secondary)',
+            transformOrigin: '0 50%',
+            transform: 'translate(0, -50%) rotate(0deg)',
+            borderRadius: '0.5px'
+          }}></div>
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            width: '10px',
+            height: '1px',
+            background: 'var(--text-secondary)',
+            transformOrigin: '0 50%',
+            transform: 'translate(0, -50%) rotate(72deg)',
+            borderRadius: '0.5px',
+            opacity: 0.8
+          }}></div>
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            width: '8px',
+            height: '1px',
+            background: 'var(--text-secondary)',
+            transformOrigin: '0 50%',
+            transform: 'translate(0, -50%) rotate(144deg)',
+            borderRadius: '0.5px',
+            opacity: 0.7
+          }}></div>
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            width: '6px',
+            height: '1px',
+            background: 'var(--text-secondary)',
+            transformOrigin: '0 50%',
+            transform: 'translate(0, -50%) rotate(216deg)',
+            borderRadius: '0.5px',
+            opacity: 0.6
+          }}></div>
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            width: '4px',
+            height: '1px',
+            background: 'var(--text-secondary)',
+            transformOrigin: '0 50%',
+            transform: 'translate(0, -50%) rotate(288deg)',
+            borderRadius: '0.5px',
+            opacity: 0.5
+          }}></div>
+
+          {/* Outer dots */}
+          <div style={{
+            position: 'absolute',
+            top: '1px',
+            left: '50%',
+            width: '1px',
+            height: '1px',
+            background: 'var(--text-secondary)',
+            borderRadius: '50%',
+            transform: 'translateX(-50%)',
+            opacity: 0.7
+          }}></div>
+          <div style={{
+            position: 'absolute',
+            bottom: '1px',
+            right: '3px',
+            width: '1px',
+            height: '1px',
+            background: 'var(--text-secondary)',
+            borderRadius: '50%',
+            opacity: 0.5
+          }}></div>
+          <div style={{
+            position: 'absolute',
+            top: '3px',
+            right: '1px',
+            width: '1px',
+            height: '1px',
+            background: 'var(--text-secondary)',
+            borderRadius: '50%',
+            opacity: 0.6
+          }}></div>
+        </div>
+      </div>
+      <div>
+        <div style={{ 
+          fontWeight: 500, 
+          fontSize: '0.85rem', 
+          color: imageFile ? 'var(--text-primary)' : 'var(--text-secondary)',
+          marginBottom: '2px'
+        }}>
+          {imageFile ? imageFile.name : 'Choose Image'}
+        </div>
+        <div style={{ 
+          fontSize: '0.7rem', 
+          color: 'var(--text-dim)' 
+        }}>
+          {imageFile ? 'Click to change' : 'Browse files'}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 
 export default function RoughImageGenerator(): JSX.Element {
+
+  // Inject global slider style once for the app (thicker, theme-matched)
+  useEffect(() => {
+    const styleEl = document.createElement('style');
+    styleEl.setAttribute('data-app-slider-theme', 'true');
+    styleEl.textContent = `
+      /* injected slider theme CSS */
+      input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 12px;
+        background: linear-gradient(180deg, #1a1214 0%, #0c0708 100%);
+        border: 1px solid #1c1315;
+        border-radius: 10px;
+        box-shadow: inset 0 1px 0 rgba(0,0,0,0.5), 0 0 0 1px #0c0708;
+        outline: none;
+      }
+      input[type="range"]:focus {
+        box-shadow: inset 0 1px 0 rgba(0,0,0,0.5), 0 0 0 1px #333;
+      }
+      /* WebKit */
+      input[type="range"]::-webkit-slider-runnable-track {
+        height: 12px;
+        background: linear-gradient(180deg, #1a1214 0%, #0c0708 100%);
+        border: 1px solid #1c1315;
+        border-radius: 10px;
+      }
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 16px;
+        height: 16px;
+        margin-top: -3px;
+        background: #241a1c;
+        border: 1px solid #1c1315;
+        border-radius: 8px;
+        box-shadow: 0 0 0 1px #0c0708, 0 4px 10px rgba(0,0,0,0.5);
+        cursor: pointer;
+      }
+      input[type="range"]:active::-webkit-slider-thumb {
+        transform: scale(1.05);
+      }
+      /* Firefox */
+      input[type="range"]::-moz-range-track {
+        height: 12px;
+        background: linear-gradient(180deg, #1a1214 0%, #0c0708 100%);
+        border: 1px solid #1c1315;
+        border-radius: 10px;
+      }
+      input[type="range"]::-moz-range-progress {
+        height: 12px;
+        background: rgba(212, 196, 193, 0.1);
+        border: 1px solid #1c1315;
+        border-radius: 10px 0 0 10px;
+      }
+      input[type="range"]::-moz-range-thumb {
+        width: 16px;
+        height: 16px;
+        background: #241a1c;
+        border: 1px solid #1c1315;
+        border-radius: 8px;
+        box-shadow: 0 0 0 1px #0c0708, 0 4px 10px rgba(0,0,0,0.5);
+        cursor: pointer;
+      }
+    `;
+    document.head.appendChild(styleEl);
+    return () => {
+      if (styleEl.parentNode) styleEl.parentNode.removeChild(styleEl);
+    };
+  }, []);
+
+
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const canvasContainerRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -73,12 +314,23 @@ export default function RoughImageGenerator(): JSX.Element {
   const strobeStateRef = useRef(true); // true: expand, false: contract
   const ripplesRef = useRef<{r: number, c: number, color: number, radius: number, maxRadius: number}[]>([]);
 
+  // === Recording state & refs ===
+  const [recordEnabled, setRecordEnabled] = useState(true);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingFilename, setRecordingFilename] = useState("grid-recording");
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const [recordingToast, setRecordingToast] = useState<string | null>(null);
+
+  const sanitizeFilename = (name: string) => name.replace(/[^a-z0-9-_]+/gi, "_");
+  // === End Recording state & refs ===
+
   const defaults = {
     cellSize: 2,
     rows: 375,
     cols: 375,
     showGrid: false,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: '#0f0a0b',
     selectedColor: 1,
     spreadProbability: 0.3,
     autoSpreadSpeed: 3,
@@ -109,7 +361,7 @@ export default function RoughImageGenerator(): JSX.Element {
   };
 
   const [palette, setPalette] = useState([
-    '#000000', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', 
+    '#000000', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4',
     '#feca57', '#ff9ff3', '#54a0ff', '#5f27cd'
   ]);
 
@@ -132,14 +384,13 @@ export default function RoughImageGenerator(): JSX.Element {
   const [autoSpreadEnabled, setAutoSpreadEnabled] = useState(true);
   const [autoDots, setAutoDots] = useState(false);
   const [autoDotsEnabled, setAutoDotsEnabled] = useState(true);
-  const [autoDotsSpeed, setAutoDotsSpeed] = useState(defaults.autoDotsSpeed || 1);
+  const [autoDotsSpeed, setAutoDotsSpeed] = useState(1);
   const [autoShapes, setAutoShapes] = useState(false);
   const [autoShapesEnabled, setAutoShapesEnabled] = useState(true);
-  const [autoShapesSpeed, setAutoShapesSpeed] = useState(defaults.autoShapesSpeed || 1);
+  const [autoShapesSpeed, setAutoShapesSpeed] = useState(1);
   const [blendMode, setBlendMode] = useState(defaults.blendMode);
   const [panelMinimized, setPanelMinimized] = useState(false);
   const [showSpeedSettings, setShowSpeedSettings] = useState(false);
-  const [showCanvasSettings, setShowCanvasSettings] = useState(false);
   const [showVisualSettings, setShowVisualSettings] = useState(false);
   const [showGenerativeSettings, setShowGenerativeSettings] = useState(false);
   const [showStepControls, setShowStepControls] = useState(false);
@@ -200,7 +451,7 @@ export default function RoughImageGenerator(): JSX.Element {
   const strobeContractThresholdRef = useRef(strobeContractThreshold);
   const scrambleSwapsRef = useRef(scrambleSwaps);
   const rippleChanceRef = useRef(rippleChance);
-  
+
   useEffect(() => { spreadProbabilityRef.current = spreadProbability; }, [spreadProbability]);
   useEffect(() => { autoSpreadSpeedRef.current = autoSpreadSpeed; }, [autoSpreadSpeed]);
   useEffect(() => { autoDotsSpeedRef.current = autoDotsSpeed; }, [autoDotsSpeed]);
@@ -243,18 +494,114 @@ export default function RoughImageGenerator(): JSX.Element {
   const mousePos = useRef({ x: 0, y: 0 });
   const [isMobile, setIsMobile] = useState(false);
 
+  // === Recording functions ===
+  const startRecording = () => {
+    if (!recordEnabled) {
+      setRecordingToast("Enable recording in Visual Settings first");
+      return;
+    }
+    const canvas = canvasRef.current as HTMLCanvasElement | null;
+    if (!canvas) {
+      setRecordingToast("Canvas not ready");
+      return;
+    }
+
+    const fps = 30;
+    const stream: MediaStream | null = (canvas as any).captureStream
+      ? canvas.captureStream(fps)
+      : (canvas as any).mozCaptureStream
+      ? (canvas as any).mozCaptureStream(fps)
+      : null;
+
+    if (!stream) {
+      setRecordingToast("Recording not supported in this browser");
+      return;
+    }
+
+    const candidates = [
+      "video/webm;codecs=vp9",
+      "video/webm;codecs=vp8",
+      "video/webm"
+    ];
+    let mimeType = "";
+    if (typeof MediaRecorder !== "undefined") {
+      for (const type of candidates) {
+        if ((MediaRecorder as any).isTypeSupported?.(type)) { mimeType = type; break; }
+      }
+    }
+
+    let recorder: MediaRecorder;
+    try {
+      recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+    } catch (e) {
+      setRecordingToast("Failed to start recorder");
+      return;
+    }
+    mediaRecorderRef.current = recorder;
+    recordedChunksRef.current = [];
+
+    recorder.ondataavailable = (e: BlobEvent) => {
+      if (e.data && e.data.size > 0) recordedChunksRef.current.push(e.data);
+    };
+    recorder.onerror = () => {
+      setRecordingToast("Recording error");
+    };
+    recorder.onstop = () => {
+      try {
+        if (recordedChunksRef.current.length === 0) {
+          setRecordingToast("No data captured");
+        } else {
+          const outType = recorder.mimeType || "video/webm";
+          const blob = new Blob(recordedChunksRef.current, { type: outType });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `${sanitizeFilename(recordingFilename || "grid-recording")}-${Date.now()}.webm`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          setRecordingToast("Recording saved");
+        }
+      } finally {
+        // Always stop stream tracks
+        stream.getTracks().forEach(t => t.stop());
+        setIsRecording(false);
+      }
+    };
+
+    try {
+      recorder.start(1000); // 1s timeslice ensures dataavailable fires
+      setIsRecording(true);
+      setRecordingToast("Recording started (press R to stop)");
+    } catch (e) {
+      setRecordingToast("Recorder start failed");
+    }
+  };
+
+  const stopRecording = () => {
+    const rec = mediaRecorderRef.current;
+    if (rec && rec.state !== "inactive") {
+      try {
+        rec.requestData?.();
+      } catch {}
+      rec.stop();
+      setRecordingToast("Stopping recording…");
+    }
+  };
+  // === End Recording functions ===
+
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth < 800;
       setIsMobile(mobile);
       if (!mobile && canvasContainerRef.current) {
-        const rect = canvasContainerRef.current.getBoundingClientRect();
         setPanelPos(prev => ({ x: 24, y: prev.y }));
       }
     };
     window.addEventListener('resize', handleResize);
     handleResize();
-    return () => window.removeEventListener('resize', handleResize);
+return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   useEffect(() => {
@@ -270,7 +617,7 @@ export default function RoughImageGenerator(): JSX.Element {
         else if (keys.has('KeyS')) newDirection = 'down';
         else if (keys.has('KeyA')) newDirection = 'left';
         else if (keys.has('KeyD')) newDirection = 'right';
-        
+
         if (newDirection) {
             const isDiagonal = newDirection.includes('-');
             const isCardinal = !isDiagonal;
@@ -297,7 +644,7 @@ export default function RoughImageGenerator(): JSX.Element {
 
         const code = keyMap[e.code] || e.code;
         if (!relevantCodes.includes(code) || e.repeat) return;
-        
+
         e.preventDefault();
         pressedKeys.current.add(code);
         updateDirection();
@@ -309,7 +656,7 @@ export default function RoughImageGenerator(): JSX.Element {
             pressedKeys.current.delete(code);
         }
     };
-    
+
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
 
@@ -374,6 +721,30 @@ export default function RoughImageGenerator(): JSX.Element {
 
   useEffect(() => draw(), [draw]);
 
+  // === Recording shortcut + toast ===
+  useEffect(() => {
+    const handleRecordingShortcut = (e: KeyboardEvent) => {
+      if (e.key && e.key.toLowerCase() === "r" && recordEnabled) {
+        e.preventDefault();
+        if (isRecording) {
+          stopRecording();
+        } else {
+          startRecording();
+        }
+      }
+    };
+    window.addEventListener("keydown", handleRecordingShortcut);
+    return () => window.removeEventListener("keydown", handleRecordingShortcut);
+  }, [isRecording, recordEnabled, recordingFilename]);
+
+  useEffect(() => {
+    if (recordingToast) {
+      const t = setTimeout(() => setRecordingToast(null), 1400);
+      return () => clearTimeout(t);
+    }
+  }, [recordingToast]);
+  // === End Recording shortcut + toast ===
+
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -384,22 +755,22 @@ export default function RoughImageGenerator(): JSX.Element {
       // Check if image is larger than screen
       const maxWidth = Math.floor(window.innerWidth * 0.8 / cellSize);
       const maxHeight = Math.floor(window.innerHeight * 0.8 / cellSize);
-      
+
       if (img.width > maxWidth || img.height > maxHeight) {
         // Calculate suggested size maintaining aspect ratio
         const aspectRatio = img.width / img.height;
         let newWidth = Math.min(img.width, maxWidth);
         let newHeight = Math.min(img.height, maxHeight);
-        
+
         if (newWidth / aspectRatio > maxHeight) {
           newWidth = maxHeight * aspectRatio;
         } else {
           newHeight = newWidth / aspectRatio;
         }
-        
-        setSuggestedSize({ 
-          width: Math.floor(newWidth), 
-          height: Math.floor(newHeight) 
+
+        setSuggestedSize({
+          width: Math.floor(newWidth),
+          height: Math.floor(newHeight)
         });
         setPendingImage(img);
         setShowResizeDialog(true);
@@ -454,13 +825,13 @@ export default function RoughImageGenerator(): JSX.Element {
     // Use image dimensions directly for 1:1 pixel mapping
     const imageWidth = img.width;
     const imageHeight = img.height;
-    
+
     canvas.width = imageWidth;
     canvas.height = imageHeight;
-    
+
     // Draw image at original size for exact pixel mapping
     ctx.drawImage(img, 0, 0);
-    
+
     const imageData = ctx.getImageData(0, 0, imageWidth, imageHeight);
     const newGrid = createEmptyGrid(imageHeight, imageWidth);
     const newPalette = [...palette];
@@ -483,10 +854,10 @@ export default function RoughImageGenerator(): JSX.Element {
           newGrid[r][c] = 0;
         } else {
           const rgb = `#${red.toString(16).padStart(2, '0')}${green.toString(16).padStart(2, '0')}${blue.toString(16).padStart(2, '0')}`;
-          
+
           // Check if this exact color already exists
           let colorIndex = colorMap.get(rgb.toLowerCase());
-          
+
           if (colorIndex === undefined) {
             // Color doesn't exist, add it to the palette
             colorIndex = newPalette.length;
@@ -506,6 +877,8 @@ export default function RoughImageGenerator(): JSX.Element {
     setGrid(newGrid);
     setOriginalGrid(cloneGrid(newGrid));
   };
+
+
 
 
 
@@ -544,7 +917,7 @@ export default function RoughImageGenerator(): JSX.Element {
                     }
                     ripple.radius += 0.5;
                 });
-                
+
                 // Filter out old ripples
                 ripplesRef.current = ripplesRef.current.filter(r => r.radius <= r.maxRadius);
 
@@ -583,7 +956,7 @@ export default function RoughImageGenerator(): JSX.Element {
                     }
                     const cell1 = coloredCells[idx1];
                     const cell2 = coloredCells[idx2];
-                    
+
                     if (cell1 && cell2) {
                         const color1 = ng[cell1.r][cell1.c];
                         const color2 = ng[cell2.r][cell2.c];
@@ -598,15 +971,15 @@ export default function RoughImageGenerator(): JSX.Element {
                 for (let i = 0; i < count; i++) {
                     const r = 1 + Math.floor(Math.random() * (currentRows - 2));
                     const c = 1 + Math.floor(Math.random() * (currentCols - 2));
-                    
+
                     const neighborsCoords = [
                         [r - 1, c - 1], [r - 1, c], [r - 1, c + 1],
                         [r, c + 1], [r + 1, c + 1], [r + 1, c],
                         [r + 1, c - 1], [r, c - 1]
                     ];
-                    
+
                     const originalColors = neighborsCoords.map(([nr, nc]) => g[nr][nc]);
-                    
+
                     // Clockwise rotation
                     neighborsCoords.forEach(([nr, nc], idx) => {
                         const sourceIndex = (idx + 7) % 8; // (idx - 1 + 8) % 8
@@ -617,7 +990,7 @@ export default function RoughImageGenerator(): JSX.Element {
             }
             case 'strobe': {
                 strobeStateRef.current = !strobeStateRef.current;
-            
+
                 if (strobeStateRef.current) { // EXPAND
                     const expandThreshold = strobeExpandThresholdRef.current;
                     const locationsToColor = new Map<string, number>();
@@ -634,13 +1007,13 @@ export default function RoughImageGenerator(): JSX.Element {
                                         }
                                     }
                                 }
-            
+
                                 if (neighborColors.length >= expandThreshold) {
                                     const colorCounts = neighborColors.reduce((acc, color) => {
                                         acc[color] = (acc[color] || 0) + 1;
                                         return acc;
                                     }, {} as Record<number, number>);
-                                    
+
                                     let dominantColor = 0;
                                     let maxCount = 0;
                                     for (const color in colorCounts) {
@@ -660,7 +1033,7 @@ export default function RoughImageGenerator(): JSX.Element {
                         const [r, c] = key.split(',').map(Number);
                         ng[r][c] = color;
                     });
-            
+
                 } else { // CONTRACT
                     const contractThreshold = strobeContractThresholdRef.current;
                     for (let r = 0; r < currentRows; r++) {
@@ -730,13 +1103,13 @@ export default function RoughImageGenerator(): JSX.Element {
                 const empties = new Set<string>();
                 const dir = flowDirectionRef.current;
                 const chance = flowChanceRef.current;
-                
+
                 let r_start = 0, r_end = currentRows, r_inc = 1;
                 let c_start = 0, c_end = currentCols, c_inc = 1;
-        
+
                 if (dir === 'up') { r_start = currentRows - 1; r_end = -1; r_inc = -1; }
                 if (dir === 'left') { c_start = currentCols - 1; c_end = -1; c_inc = -1; }
-        
+
                 for (let r = r_start; r !== r_end; r += r_inc) {
                     for (let c = c_start; c !== c_end; c += c_inc) {
                         const color = g[r]?.[c];
@@ -746,10 +1119,10 @@ export default function RoughImageGenerator(): JSX.Element {
                             else if (dir === 'down') dr = 1;
                             else if (dir === 'left') dc = -1;
                             else if (dir === 'right') dc = 1;
-        
+
                             const nr = r + dr;
                             const nc = c + dc;
-        
+
                             if (nr >= 0 && nr < currentRows && nc >= 0 && nc < currentCols && g[nr][nc] === 0) {
                                 if (!changes.has(`${nr},${nc}`)) {
                                     changes.set(`${nr},${nc}`, color);
@@ -759,7 +1132,7 @@ export default function RoughImageGenerator(): JSX.Element {
                         }
                     }
                 }
-        
+
                 empties.forEach(key => {
                     const [r, c] = key.split(',').map(Number);
                     if (!changes.has(key)) ng[r][c] = 0;
@@ -822,14 +1195,14 @@ export default function RoughImageGenerator(): JSX.Element {
                     } else {
                         bestDir = { dr: Math.floor(Math.random() * 3) - 1, dc: Math.floor(Math.random() * 3) - 1 };
                     }
-                    
+
                     const newR = Math.max(0, Math.min(currentRows - 1, walker.r + bestDir.dr));
                     const newC = Math.max(0, Math.min(currentCols - 1, walker.c + bestDir.dc));
-                    
+
                     walker.r = Math.floor(newR);
                     walker.c = Math.floor(newC);
                     ng[walker.r][walker.c] = walker.color;
-                    
+
                     if (Math.random() < veinBranchChanceRef.current) {
                         walkers.current.push({...walker});
                     }
@@ -852,11 +1225,11 @@ export default function RoughImageGenerator(): JSX.Element {
                                    }
                                }
                            }
-                           
+
                            if (neighbors.length > 0) {
                                const counts: {[key:number]: number} = {};
                                neighbors.forEach(n => { counts[n] = (counts[n] || 0) + 1; });
-                               
+
                                for(const color in counts) {
                                    if (counts[color] >= crystallizeThresholdRef.current) {
                                        ng[r][c] = parseInt(color);
@@ -876,11 +1249,11 @@ export default function RoughImageGenerator(): JSX.Element {
                                    }
                                }
                            }
-                           
+
                            if (neighbors.length >= crystallizeThresholdRef.current + 2) {
                                const counts: {[key:number]: number} = {};
                                neighbors.forEach(n => { counts[n] = (counts[n] || 0) + 1; });
-                               
+
                                for(const color in counts) {
                                    if (counts[color] >= crystallizeThresholdRef.current + 1) {
                                        ng[r][c] = parseInt(color);
@@ -920,14 +1293,14 @@ export default function RoughImageGenerator(): JSX.Element {
                 const rules = pattern === 'conway' ? conwayRulesRef.current : tendrilsRulesRef.current;
                 const BORN = rules.born;
                 const SURVIVE = rules.survive;
-                
+
                 // First, preserve all existing pixels
                 for (let r = 0; r < currentRows; r++) {
                     for (let c = 0; c < currentCols; c++) {
                         ng[r][c] = g[r][c]; // Copy existing state
                     }
                 }
-                
+
                 // Then apply cellular automata rules only to empty spaces and unstable pixels
                 for (let r = 0; r < currentRows; r++) {
                     for (let c = 0; c < currentCols; c++) {
@@ -946,7 +1319,7 @@ export default function RoughImageGenerator(): JSX.Element {
                         }
 
                         const isAlive = g[r]?.[c] > 0;
-                        
+
                         // Only apply death rules with low probability to preserve image
                         if (isAlive && !SURVIVE.includes(liveNeighbors) && Math.random() < 0.1) {
                             ng[r][c] = 0;
@@ -957,7 +1330,7 @@ export default function RoughImageGenerator(): JSX.Element {
                                 acc[color] = (acc[color] || 0) + 1;
                                 return acc;
                             }, {} as Record<number, number>);
-                            
+
                             let dominantColor = 0;
                             let maxCount = 0;
                             for (const color in colorCounts) {
@@ -1021,7 +1394,7 @@ export default function RoughImageGenerator(): JSX.Element {
                         }
                     }
                 }
-                
+
                 changes.forEach((color, key) => {
                     const [r, c] = key.split(',').map(Number);
                     ng[r][c] = color;
@@ -1042,7 +1415,7 @@ export default function RoughImageGenerator(): JSX.Element {
                                 for (let dc = -1; dc <= 1; dc++) {
                                     if (dr === 0 && dc === 0) continue;
                                     if (mode === 'cardinal' && dr !== 0 && dc !== 0) continue;
-                                    
+
                                     const nr = r + dr;
                                     const nc = c + dc;
                                     if (nr >= 0 && nr < currentRows && nc >= 0 && nc < currentCols) {
@@ -1050,13 +1423,13 @@ export default function RoughImageGenerator(): JSX.Element {
                                     }
                                 }
                             }
-                            
+
                             if (neighbors.length > 0) {
                                 for (let i = neighbors.length - 1; i > 0; i--) {
                                     const j = Math.floor(Math.random() * (i + 1));
                                     [neighbors[i], neighbors[j]] = [neighbors[j], neighbors[i]];
                                 }
-                                
+
                                 const count = randomWalkSpreadCountRef.current;
                                 for(let i=0; i < Math.min(count, neighbors.length); i++) {
                                     const randomNeighbor = neighbors[i];
@@ -1090,7 +1463,7 @@ export default function RoughImageGenerator(): JSX.Element {
                             if (directionalBiasRef.current !== 'none' && Math.random() < directionalBiasStrengthRef.current) {
                                 const bias = directionalBiasRef.current;
                                 let dr = 0, dc = 0;
-                                
+
                                 switch (bias) {
                                     case 'up':          dr = -1; dc =  0; break;
                                     case 'down':        dr =  1; dc =  0; break;
@@ -1101,9 +1474,9 @@ export default function RoughImageGenerator(): JSX.Element {
                                     case 'bottom-left': dr =  1; dc = -1; break;
                                     case 'bottom-right':dr =  1; dc =  1; break;
                                 }
-        
+
                                 const biasedNeighbor = { r: r + dr, c: c + dc };
-                                
+
                                 if (biasedNeighbor.r >= 0 && biasedNeighbor.r < currentRows && biasedNeighbor.c >= 0 && biasedNeighbor.c < currentCols) {
                                     ng[biasedNeighbor.r][biasedNeighbor.c] = currentColor;
                                     continue;
@@ -1137,7 +1510,7 @@ export default function RoughImageGenerator(): JSX.Element {
             const color = availableColors[Math.floor(Math.random() * availableColors.length)];
             if(ng[r]) ng[r][c] = color;
         }
-        
+
         return ng;
     });
   }, [palette]);
@@ -1155,13 +1528,13 @@ export default function RoughImageGenerator(): JSX.Element {
         for (let i = 0; i < numShapes; i++) {
             const color = availableColors[Math.floor(Math.random() * availableColors.length)];
             const shapeType = Math.random() > 0.5 ? 'rect' : 'line';
-            
+
             if (shapeType === 'rect') {
                 const startR = Math.floor(Math.random() * (currentRows - 5));
                 const startC = Math.floor(Math.random() * (currentCols - 5));
                 const width = Math.floor(Math.random() * 6) + 3;
                 const height = Math.floor(Math.random() * 6) + 3;
-                
+
                 for (let r = startR; r < Math.min(startR + height, currentRows); r++) {
                     for (let c = startC; c < Math.min(startC + width, currentCols); c++) {
                         if(ng[r]) ng[r][c] = color;
@@ -1172,24 +1545,24 @@ export default function RoughImageGenerator(): JSX.Element {
                 const startC = Math.floor(Math.random() * currentCols);
                 const isHorizontal = Math.random() > 0.5;
                 const length = Math.floor(Math.random() * 10) + 5;
-                
+
                 for (let i = 0; i < length; i++) {
                     let r = startR;
                     let c = startC;
-                    
+
                     if (isHorizontal) {
                         c += i;
                     } else {
                         r += i;
                     }
-                    
+
                     if (r >= 0 && r < currentRows && c >= 0 && c < currentCols) {
                         if(ng[r]) ng[r][c] = color;
                     }
                 }
             }
         }
-        
+
         return ng;
     });
   }, [palette]);
@@ -1201,10 +1574,10 @@ export default function RoughImageGenerator(): JSX.Element {
       if (!runningRef.current) return;
 
       const pattern = spreadPatternRef.current;
-      const speed = pattern === 'pulse' 
-        ? pulseSpeedRef.current 
+      const speed = pattern === 'pulse'
+        ? pulseSpeedRef.current
         : autoSpreadSpeedRef.current;
-      
+
       const interval = 1000 / Math.max(0.25, speed);
 
       // Skip frames for very slow speeds to reduce CPU usage
@@ -1286,6 +1659,8 @@ export default function RoughImageGenerator(): JSX.Element {
     }
   };
 
+  const isAnyRunning = autoSpreading || autoDots || autoShapes;
+
   const startAllEnabled = () => {
     if (autoSpreadEnabled && !autoSpreading) {
       runningRef.current = true;
@@ -1341,7 +1716,7 @@ export default function RoughImageGenerator(): JSX.Element {
         setPanelPos({ x: e.clientX - dragOffset.current.x, y: e.clientY - dragOffset.current.y });
     };
     const handleMouseUp = () => { isDragging.current = false; };
-    
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Shift') {
         e.preventDefault();
@@ -1352,17 +1727,50 @@ export default function RoughImageGenerator(): JSX.Element {
         setPanelPos({ x: 24, y: desiredY });
       }
     };
-    
+
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
     window.addEventListener('keydown', handleKeyDown);
-    
+
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isMobile, panelPos]);
+
+  // Keybinds for auto-run toggles
+  useEffect(() => {
+    const handleKeydown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName)) {
+        return;
+      }
+
+      switch (e.code) {
+        case 'Space':
+          e.preventDefault();
+          toggleAutoSpread();
+          break;
+        case 'KeyJ':
+          toggleAutoDots();
+          break;
+        case 'KeyK':
+          toggleAutoShapes();
+          break;
+        case 'KeyL':
+          isAnyRunning ? stopAll() : startAllEnabled();
+          break;
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeydown);
+    return () => {
+      window.removeEventListener('keydown', handleKeydown);
+    };
+  }, [isAnyRunning, startAllEnabled, stopAll, toggleAutoSpread, toggleAutoDots, toggleAutoShapes]);
 
   const handleRowsChange = useCallback((newRows: number) => {
     setRows(newRows);
@@ -1406,7 +1814,7 @@ export default function RoughImageGenerator(): JSX.Element {
       setSelectedColor(index);
     }
   };
-  
+
 
   const resetGenerativeSettings = () => {
     setSpreadPattern(defaults.spreadPattern);
@@ -1434,66 +1842,78 @@ export default function RoughImageGenerator(): JSX.Element {
     setRippleChance(defaults.rippleChance);
   };
 
-  const isAnyRunning = autoSpreading || autoDots || autoShapes;
-  const anyEnabled = autoSpreadEnabled || autoDotsEnabled || autoShapesEnabled;
+  const settingsContainerStyle: React.CSSProperties = {
+    background: 'linear-gradient(145deg, rgba(26, 18, 20, 0.5) 0%, rgba(12, 7, 8, 0.5) 100%)',
+    border: '1px solid #1c1315',
+    padding: '16px',
+    borderRadius: '6px',
+    marginBottom: '20px'
+  };
 
   return (
     <div style={{
       width: '100%',
       minHeight: '100vh',
-      background: 'black',
+      background: 'radial-gradient(ellipse at center, #1a0f11 0%, #0f0a0b 60%, #0c0708 100%)',
       display: 'flex',
       flexDirection: isMobile ? 'column' : 'row',
       justifyContent: 'center',
       alignItems: 'center',
-      color: '#fff',
+      color: '#d4c4c1',
       gap: '20px'
     }}>
+      {recordingToast && (
+        <div style={{ position: 'fixed', top: 12, right: 12, background: 'rgba(0,0,0,0.8)', color: '#fff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.9rem', zIndex: 2000 }}>
+          {recordingToast}
+        </div>
+      )}
       <div
         ref={panelRef}
         style={{
-          background: 'rgba(39, 39, 42, 0.95)',
-          padding: '12px',
-          borderRadius: '10px',
-          width: isMobile ? 'calc(100% - 20px)' : 'auto',
-          maxWidth: '480px',
-          zIndex: 1000,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-          maxHeight: isMobile ? 'none' : '80vh',
-          overflowY: isMobile ? 'visible' : 'auto',
-          margin: isMobile ? '0 auto' : '0'
+          position: 'fixed',
+          left: '24px',
+          top: '24px',
+          bottom: '24px',
+          width: '320px',
+          background: 'linear-gradient(160deg, #1a1214 0%, #0c0708 100%)',
+          padding: '0',
+          borderRadius: '0',
+          border: 'none',
+          boxShadow: 'inset 0 0 0 1px #1c1315, 0 0 0 1px #0c0708, 0 8px 32px rgba(0,0,0,0.8)',
+          overflow: 'hidden',
+          zIndex: 10,
+          backdropFilter: 'blur(24px)',
+          clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))'
         }}
       >
         <div
           style={{
-            fontWeight: 500,
-            marginBottom: '12px',
-            padding: '4px',
-            background: 'rgba(63, 63, 70, 0.8)',
-            borderRadius: '6px',
-            fontSize: '1rem',
+            padding: '16px 20px',
+            background: '#0c0708',
+            borderBottom: '1px solid #1c1315',
+            fontSize: '0.9rem',
+            fontWeight: 400,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
             userSelect: 'none',
             display: 'flex',
-            justifyContent: 'center',
+            justifyContent: 'space-between',
             alignItems: 'center',
+            color: '#8a7a77'
           }}
         >
-          <span>Rough Image Generator</span>
+          <span>Induced Roughness</span>
           <button
             onClick={() => setPanelMinimized(prev => !prev)}
             style={{
               background: 'transparent',
               border: 'none',
-              color: '#fff',
+              outline: 'none',
+              color: '#d4c4c1',
               cursor: 'pointer',
               fontSize: '1.2rem',
-              width: '24px',
-              height: '24px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '0',
-              marginLeft: '4px',
+              padding: '0 8px',
+              transition: 'all 0.2s ease',
             }}
           >
             {panelMinimized ? '+' : '-'}
@@ -1501,84 +1921,52 @@ export default function RoughImageGenerator(): JSX.Element {
         </div>
 
         <div style={{
-          maxHeight: panelMinimized ? '0px' : '2000px',
+          height: panelMinimized ? '0px' : 'calc(100% - 60px)',
           overflow: 'hidden',
-          transition: 'max-height 0.3s ease'
+          transition: 'height 0.3s ease'
         }}>
           <div style={{
+            height: '100%',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            padding: '20px',
             opacity: panelMinimized ? 0 : 1,
             transition: 'opacity 0.3s ease',
-            pointerEvents: panelMinimized ? 'none' : 'auto'
+            pointerEvents: panelMinimized ? 'none' : 'auto',
+            background: 'linear-gradient(180deg, transparent 0%, rgba(12, 7, 8, 0.3) 100%)'
           }}>
-            
-            <div className="upload-area" onClick={() => document.getElementById('imageUpload')?.click()}>
-              <div className="upload-text">
-                {imageFile ? `Uploaded: ${imageFile.name}` : 'Click to upload an image'}
-              </div>
-              <div className="upload-button">
-                {imageFile ? 'Change Image' : 'Upload Image'}
-              </div>
-              <input
-                id="imageUpload"
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                style={{ display: 'none' }}
-              />
-              {uploadedImage && (
-                <img 
-                  src={uploadedImage.src} 
-                  alt="Preview" 
-                  className="image-preview"
-                />
-              )}
-            </div>
-            
-            
-            <div style={{ marginBottom: '12px' }}>
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+
+            <CompactUploadButton 
+              imageFile={imageFile} 
+              onClick={() => document.getElementById('imageUpload')?.click()} 
+            />
+
+            <input
+              id="imageUpload"
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              style={{ display: 'none' }}
+            />
+
+
+            <div className="control-group">
+              <div className="toggle-group">
                 <button
+                  className={`toggle-option ${showAutoControls ? 'active' : ''}`}
                   onClick={() => setShowAutoControls(prev => !prev)}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: '6px',
-                    background: showAutoControls ? '#52525b' : '#3a3a3c',
-                    color: '#fff',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontWeight: 'normal',
-                    fontSize: '0.95rem'
-                  }}
                 >
                   Auto
                 </button>
                 <button
+                  className={`toggle-option ${showOptions ? 'active' : ''}`}
                   onClick={() => setShowOptions(prev => !prev)}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: '6px',
-                    background: showOptions ? '#52525b' : '#3a3a3c',
-                    color: '#fff',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontWeight: 'normal',
-                    fontSize: '0.95rem'
-                  }}
                 >
                   Options
                 </button>
                 <button
+                  className="toggle-option"
                   onClick={() => { clear(); setIsSavingColor(false); }}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: '6px',
-                    background: '#3a3a3c',
-                    color: '#fff',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontWeight: 'normal',
-                    fontSize: '0.95rem'
-                  }}
                 >
                   Reset
                 </button>
@@ -1586,305 +1974,142 @@ export default function RoughImageGenerator(): JSX.Element {
             </div>
 
 
-
-            {showAutoControls && (
-              <>
-                <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                  <button
-                    onClick={() => { toggleAutoSpread(); setIsSavingColor(false); }}
-                    disabled={!autoSpreadEnabled}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: '6px',
-                      background: autoSpreading 
-                        ? '#3a3a3c' 
-                        : autoSpreadEnabled 
-                          ? '#3a3a3c' 
-                          : '#52525b',
-                      color: '#fff',
-                      border: 'none',
-                      cursor: autoSpreadEnabled ? 'pointer' : 'not-allowed',
-                      fontWeight: 'normal',
-                      fontSize: '0.95rem',
-                      whiteSpace: 'nowrap',
-                      opacity: autoSpreadEnabled ? 1 : 0.6,
-                      boxShadow: autoSpreading ? '0 0 8px rgba(255, 255, 255, 0.4)' : 'none',
-                      transition: 'box-shadow 0.2s ease-in-out'
-                    }}
-                  >
-                    {autoSpreading ? 'Stop Spread' : 'Start Spread'}
-                  </button>
-                  {[
-                    { 
-                      label: autoDots ? 'Stop Dots' : 'Start Dots', 
-                      onClick: toggleAutoDots, 
-                      active: autoDots,
-                      enabled: autoDotsEnabled
-                    },
-                    { 
-                      label: autoShapes ? 'Stop Shapes' : 'Start Shapes', 
-                      onClick: toggleAutoShapes, 
-                      active: autoShapes,
-                      enabled: autoShapesEnabled
-                    }
-                  ].map(({ label, onClick, active, enabled }) => (
-                    <button
-                      key={label}
-                      onClick={() => { onClick(); setIsSavingColor(false); }}
-                      disabled={!enabled}
-                      style={{
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        background: enabled ? '#3a3a3c' : '#52525b',
-                        color: '#fff',
-                        border: 'none',
-                        cursor: enabled ? 'pointer' : 'not-allowed',
-                        fontWeight: 'normal',
-                        fontSize: '0.95rem',
-                        whiteSpace: 'nowrap',
-                        opacity: enabled ? 1 : 0.6,
-                        boxShadow: active ? '0 0 8px rgba(255, 255, 255, 0.4)' : 'none',
-                        transition: 'box-shadow 0.2s ease-in-out'
-                      }}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                  <button
-                    onClick={() => { isAnyRunning ? stopAll() : startAllEnabled(); setIsSavingColor(false); }}
-                    disabled={!anyEnabled && !isAnyRunning}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: '6px',
-                      background: anyEnabled || isAnyRunning ? '#3a3a3c' : '#52525b',
-                      color: '#fff',
-                      border: 'none',
-                      cursor: anyEnabled || isAnyRunning ? 'pointer' : 'not-allowed',
-                      fontWeight: 'normal',
-                      fontSize: '0.95rem',
-                      whiteSpace: 'nowrap',
-                      opacity: anyEnabled || isAnyRunning ? 1 : 0.6,
-                      boxShadow: isAnyRunning ? '0 0 8px rgba(255, 255, 255, 0.4)' : 'none',
-                      transition: 'box-shadow 0.2s ease-in-out'
-                    }}
-                  >
-                    {isAnyRunning ? 'Stop All' : 'Start All'}
-                  </button>
-                </div>
-              </>
-            )}
-
-            {showOptions && (
-              <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                {[
-                  { label: 'Speed', onClick: () => setShowSpeedSettings(prev => !prev), bg: showSpeedSettings ? '#52525b' : '#3a3a3c' },
-                  { label: 'Canvas', onClick: () => setShowCanvasSettings(prev => !prev), bg: showCanvasSettings ? '#52525b' : '#3a3a3c' },
-                  { label: 'Visual', onClick: () => setShowVisualSettings(prev => !prev), bg: showVisualSettings ? '#52525b' : '#3a3a3c' },
-                  { label: 'Generative', onClick: () => setShowGenerativeSettings(prev => !prev), bg: showGenerativeSettings ? '#52525b' : '#3a3a3c' },
-                  { label: 'Steps', onClick: () => setShowStepControls(prev => !prev), bg: showStepControls ? '#52525b' : '#3a3a3c' }
-                ].map(({ label, onClick, bg }) => (
-                  <button
-                    key={label}
-                    onClick={onClick}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: '6px',
-                      background: bg,
-                      color: '#fff',
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontWeight: 'normal',
-                      fontSize: '0.95rem',
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
-            
-            {showOptions && showStepControls && (
-              <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                {[
-                  { label: 'Spread Once', onClick: colorSpread }
-                ].map(({ label, onClick }) => (
-                  <button
-                    key={label}
-                    onClick={() => { onClick(); setIsSavingColor(false); }}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: '6px',
-                      background: '#3a3a3c',
-                      color: '#fff',
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontWeight: 'normal',
-                      fontSize: '0.95rem',
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {showOptions && (showSpeedSettings || showCanvasSettings) && (
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: showSpeedSettings && showCanvasSettings ? 'repeat(2, 1fr)' : '1fr',
-                gap: '12px', 
-                marginBottom: '12px' 
-              }}>
-                {showSpeedSettings && (
-                  <div>
-                    <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block', fontSize: '0.9rem', color: '#e5e7eb' }}>
-                      Speed Controls
-                    </label>
-                    {[
-                      ['Spread Rate', spreadProbability, 0, 1, 0.01, setSpreadProbability, '%'],
-                      ['Spread Speed', autoSpreadSpeed, 0.25, 100, 0.25, setAutoSpreadSpeed, '/s'],
-                      ['Dots Speed', autoDotsSpeed, 0.1, 100, 0.1, setAutoDotsSpeed, '/s'],
-                      ['Shapes Speed', autoShapesSpeed, 0.1, 100, 0.1, setAutoShapesSpeed, '/s']
-                    ].map(([label, value, min, max, step, setter, unit], idx) => (
-                      <div key={idx} style={{ marginBottom: '8px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                          <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>{label}:</label>
-                          <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>
-                            {label === 'Spread Rate' ? `${Math.round((value as number) * 100)}${unit}` : `${value}${unit}`}
-                          </span>
-                        </div>
-                        <input
-                          type="range"
-                          min={min as number}
-                          max={max as number}
-                          step={step as number}
-                          value={value as number}
-                          onChange={(e) => (setter as any)(Number(e.target.value))}
-                          style={{ width: '100%', height: '6px' }}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-{showCanvasSettings && (
-  <div>
-    <label
-      style={{
-        fontWeight: 600,
-        marginBottom: '8px',
-        display: 'block',
-        fontSize: '0.9rem',
-        color: '#e5e7eb'
-      }}
-    >
-      Canvas Settings
-    </label>
-    {[
-      ['Cell Size', cellSize, 1, 30, 1, setCellSize, ' px'],
-      ['Rows', rows, 10, 2000, 1, handleRowsChange, ''],
-      ['Cols', cols, 10, 2000, 1, handleColsChange, '']
-    ].map(([label, value, min, max, step, setter, unit], idx) => (
-      <div key={idx} style={{ marginBottom: '8px' }}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '2px'
-          }}
-        >
-          <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>
-            {label}:
-          </label>
-
-          {/* Rows/Cols: editable number input instead of static span */}
-          {label === 'Rows' || label === 'Cols' ? (
-            <input
-              type="number"
-              min={min as number}
-              max={max as number}
-              step={step as number}
-              value={value as number}
-              onChange={(e) => {
-                let newValue = Number(e.target.value);
-                if (isNaN(newValue)) return;
-                // Clamp immediately while typing
-                if (newValue < (min as number)) newValue = min as number;
-                if (newValue > (max as number)) newValue = max as number;
-                (setter as any)(newValue);
-              }}
-              style={{
-                width: '60px',
-                fontSize: '0.8rem',
-                color: '#9ca3af',
-                textAlign: 'right',
-                background: 'transparent',
-                border: 'none',
-                outline: 'none',
-                appearance: 'textfield',
-                MozAppearance: 'textfield'
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.color = '#fff';
-                e.currentTarget.style.background = '#1f2937';
-                e.currentTarget.style.border = '1px solid #4b5563';
-                e.currentTarget.style.borderRadius = '4px';
-                e.currentTarget.style.padding = '2px 4px';
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.color = '#9ca3af';
-                e.currentTarget.style.background = 'transparent';
-                e.currentTarget.style.border = 'none';
-                e.currentTarget.style.padding = '0';
-              }}
-            />
-          ) : (
-            <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>
-              {`${value}${unit}`}
-            </span>
-          )}
-        </div>
-
-        {/* Slider stays for all */}
-        <input
-          type="range"
-          min={min as number}
-          max={max as number}
-          step={step as number}
-          value={value as number}
-          onChange={(e) => (setter as any)(Number(e.target.value))}
-          style={{ width: '100%', height: '6px' }}
-        />
+<div style={{
+  display: 'grid',
+  gridTemplateColumns: (showAutoControls && showOptions) ? 'repeat(2, 1fr)' : '1fr',
+  gap: '12px',
+  margin: '20px 0 12px 0'
+}}>
+  {showAutoControls && (
+    <div>
+      <div style={{ marginBottom: '12px' }}>
+        {[
+          { label: autoSpreading ? 'Stop Spread' : 'Start Spread', isActive: autoSpreading, onClick: () => { toggleAutoSpread(); setIsSavingColor(false); }, enabled: autoSpreadEnabled },
+          { label: autoDots ? 'Stop Dots' : 'Start Dots', isActive: autoDots, onClick: () => { toggleAutoDots(); setIsSavingColor(false); }, enabled: autoDotsEnabled },
+          { label: autoShapes ? 'Stop Shapes' : 'Start Shapes', isActive: autoShapes, onClick: () => { toggleAutoShapes(); setIsSavingColor(false); }, enabled: autoShapesEnabled },
+          { label: isAnyRunning ? 'Stop All' : 'Start All', isActive: isAnyRunning, onClick: () => { isAnyRunning ? stopAll() : startAllEnabled(); }, enabled: autoSpreadEnabled || autoDotsEnabled || autoShapesEnabled || isAnyRunning }
+        ].map(({ label, isActive, onClick, enabled }) => (
+          <div
+            key={label}
+            className={`section-header ${isActive ? "active" : ""}`}
+            onClick={enabled ? onClick : undefined}
+            style={{
+              opacity: enabled ? 1 : 0.4,
+              cursor: enabled ? 'pointer' : 'not-allowed'
+            }}
+          >
+            <div className="section-title">{label}</div>
+          </div>
+        ))}
       </div>
-    ))}
-  </div>
-)}
+    </div>
+  )}
+  {showOptions && (
+    <div>
+      <div style={{ marginBottom: '12px' }}>
+        {[
+          { label: 'Speed', isActive: showSpeedSettings, onClick: () => setShowSpeedSettings(prev => !prev) },
+          { label: 'Visual', isActive: showVisualSettings, onClick: () => setShowVisualSettings(prev => !prev) },
+          { label: 'Generative', isActive: showGenerativeSettings, onClick: () => setShowGenerativeSettings(prev => !prev) },
+          { label: 'Steps', isActive: showStepControls, onClick: () => setShowStepControls(prev => !prev) }
+        ].map(({ label, isActive, onClick }) => (
+          <div
+            key={label}
+            className={`section-header ${isActive ? "active" : ""}`}
+            onClick={onClick}
+          >
+            <div className="section-title">{label}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )}
+</div>
 
+            {showOptions && (showStepControls || showSpeedSettings || showVisualSettings || showGenerativeSettings) && (
+              <div style={{
+                height: '1px',
+                width: '100%',
+                background: 'linear-gradient(to right, transparent, rgba(212, 196, 193, 0.15), transparent)',
+                margin: '16px 0 20px 0'
+              }}></div>
+            )}
 
+            {showOptions && showStepControls && (
+              <div style={settingsContainerStyle}>
+                <label style={{ fontWeight: 600, marginBottom: '12px', display: 'block', fontSize: '0.9rem', color: '#e5e7eb' }}>
+                  Step Controls
+                </label>
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, 1fr)',
+                    gap: '6px'
+                }}>
+                  <div className="section-header" onClick={() => { colorSpread(); setIsSavingColor(false); }}>
+                    <div className="section-title" style={{ fontSize: '0.85rem' }}>Spread</div>
+                  </div>
+                  <div className="section-header" onClick={() => { addRandomDots(); setIsSavingColor(false); }}>
+                    <div className="section-title" style={{ fontSize: '0.85rem' }}>Add Dot</div>
+                  </div>
+                  <div className="section-header" onClick={() => { addRandomShapes(); setIsSavingColor(false); }}>
+                    <div className="section-title" style={{ fontSize: '0.85rem' }}>Add Shape</div>
+                  </div>
+                </div>
               </div>
             )}
-            
+
+            {showOptions && showSpeedSettings && (
+              <div style={settingsContainerStyle}>
+                <label style={{ fontWeight: 600, marginBottom: '4px', display: 'block', fontSize: '0.9rem', color: '#e5e7eb' }}>
+                  Speed Controls
+                </label>
+                {[
+                  ['Spread Rate', spreadProbability, 0, 1, 0.01, setSpreadProbability, '%'],
+                  ['Spread Speed', autoSpreadSpeed, 0.25, 100, 0.25, setAutoSpreadSpeed, '/s'],
+                  ['Dots Speed', autoDotsSpeed, 0.1, 100, 0.1, setAutoDotsSpeed, '/s'],
+                  ['Shapes Speed', autoShapesSpeed, 0.1, 100, 0.1, setAutoShapesSpeed, '/s']
+                ].map(([label, value, min, max, step, setter, unit], idx) => (
+                  <div key={idx} className="slider-container">
+                    <div className="slider-label">
+                      <span>{label}</span>
+                      <span className="slider-value">
+                        {label === 'Spread Rate' ? `${Math.round((value as number) * 100)}${unit}` : `${value}${unit}`}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={min as number}
+                      max={max as number}
+                      step={step as number}
+                      value={value as number}
+                      onChange={(e) => (setter as (value: number) => void)(Number(e.target.value))}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
             {showOptions && (
               <>
                 {showGenerativeSettings && (
-              <div style={{ marginBottom: '12px' }}>
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '10px' }}>
+              <div style={settingsContainerStyle}>
+                <label style={{ fontWeight: 600, marginBottom: '12px', display: 'block', fontSize: '0.9rem', color: '#e5e7eb' }}>
+                  Generative Controls
+                </label>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '16px' }}>
                   <div style={{ flexGrow: 1}}>
-                    <label style={{ fontWeight: 600, marginBottom: '6px', display: 'block' }}>Spread Pattern:</label>
+                    <label style={{ fontWeight: 500, marginBottom: '6px', display: 'block', fontSize: '0.85rem' }}>Spread Pattern:</label>
                     <select
                       value={spreadPattern}
                       onChange={(e) => {
                           if (e.target.value === 'vein') walkers.current = []; // Reset walkers
                           setSpreadPattern(e.target.value as any);
                       }}
-                      style={{ 
-                        padding: '4px 8px', 
-                        borderRadius: '6px', 
-                        background: '#3a3a3c', 
-                        color: '#fff', 
+                      style={{
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        background: '#241a1c',
+                        color: '#d4c4c1',
                         border: 'none',
                         width: '100%'
                       }}
@@ -1910,8 +2135,8 @@ export default function RoughImageGenerator(): JSX.Element {
                     style={{
                       padding: '6px 12px',
                       borderRadius: '6px',
-                      background: '#3a3a3c',
-                      color: '#fff',
+                      background: '#241a1c',
+                      color: '#d4c4c1',
                       border: 'none',
                       cursor: 'pointer',
                       alignSelf: 'flex-end',
@@ -1922,82 +2147,74 @@ export default function RoughImageGenerator(): JSX.Element {
                     Reset
                   </button>
                 </div>
-                
+
                 {spreadPattern === 'ripple' && (
-                  <div style={{background: '#2c2c2e', padding: '8px', borderRadius: '6px'}}>
-                      <div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                              <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Ripple Chance:</label>
-                              <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{Math.round(rippleChance*100)}%</span>
-                          </div>
-                          <input type="range" min={0.01} max={0.5} step={0.01} value={rippleChance} onChange={(e) => setRippleChance(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                  <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                          <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Ripple Chance:</label>
+                          <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{Math.round(rippleChance*100)}%</span>
                       </div>
+                      <input type="range" min={0.01} max={0.5} step={0.01} value={rippleChance} onChange={(e) => setRippleChance(Number(e.target.value))} className="slider-input" />
                   </div>
                 )}
 
                 {spreadPattern === 'scramble' && (
-                  <div style={{background: '#2c2c2e', padding: '8px', borderRadius: '6px'}}>
-                      <div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                              <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Swaps per Step:</label>
-                              <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{scrambleSwaps}</span>
-                          </div>
-                          <input type="range" min={1} max={100} value={scrambleSwaps} onChange={(e) => setScrambleSwaps(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                  <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                          <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Swaps per Step:</label>
+                          <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{scrambleSwaps}</span>
                       </div>
+                      <input type="range" min={1} max={100} value={scrambleSwaps} onChange={(e) => setScrambleSwaps(Number(e.target.value))} className="slider-input" />
                   </div>
                 )}
-                
+
                 {spreadPattern === 'vortex' && (
-                  <div style={{background: '#2c2c2e', padding: '8px', borderRadius: '6px'}}>
-                      <div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                              <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Vortex Count:</label>
-                              <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{vortexCount}</span>
-                          </div>
-                          <input type="range" min={1} max={50} value={vortexCount} onChange={(e) => setVortexCount(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                  <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                          <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Vortex Count:</label>
+                          <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{vortexCount}</span>
                       </div>
+                      <input type="range" min={1} max={50} value={vortexCount} onChange={(e) => setVortexCount(Number(e.target.value))} className="slider-input" />
                   </div>
                 )}
 
                 {spreadPattern === 'strobe' && (
-                  <div style={{background: '#2c2c2e', padding: '8px', borderRadius: '6px'}}>
+                  <div>
                       <div style={{ marginBottom: '8px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                               <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Expand Threshold:</label>
                               <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{strobeExpandThreshold} Neighbors</span>
                           </div>
-                          <input type="range" min={1} max={8} value={strobeExpandThreshold} onChange={(e) => setStrobeExpandThreshold(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                          <input type="range" min={1} max={8} value={strobeExpandThreshold} onChange={(e) => setStrobeExpandThreshold(Number(e.target.value))} className="slider-input" />
                       </div>
                       <div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                               <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Contract Threshold:</label>
                               <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{strobeContractThreshold} Neighbors</span>
                           </div>
-                          <input type="range" min={1} max={8} value={strobeContractThreshold} onChange={(e) => setStrobeContractThreshold(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                          <input type="range" min={1} max={8} value={strobeContractThreshold} onChange={(e) => setStrobeContractThreshold(Number(e.target.value))} className="slider-input" />
                       </div>
                   </div>
                 )}
-                
+
                 {spreadPattern === 'jitter' && (
-                  <div style={{background: '#2c2c2e', padding: '8px', borderRadius: '6px'}}>
-                      <div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                              <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Jitter Chance:</label>
-                              <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{Math.round(jitterChance*100)}%</span>
-                          </div>
-                          <input type="range" min={0} max={1} step={0.05} value={jitterChance} onChange={(e) => setJitterChance(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                  <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                          <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Jitter Chance:</label>
+                          <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{Math.round(jitterChance*100)}%</span>
                       </div>
+                      <input type="range" min={0} max={1} step={0.05} value={jitterChance} onChange={(e) => setJitterChance(Number(e.target.value))} className="slider-input" />
                   </div>
                 )}
-                
+
                 {spreadPattern === 'flow' && (
-                  <div style={{background: '#2c2c2e', padding: '8px', borderRadius: '6px'}}>
+                  <div>
                       <div style={{ marginBottom: '10px' }}>
                           <label style={{ fontSize: '0.85rem', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Flow Direction:</label>
                           <select
                               value={flowDirection}
                               onChange={(e) => setFlowDirection(e.target.value as any)}
-                              style={{ padding: '4px 8px', borderRadius: '6px', background: '#3a3a3c', color: '#fff', border: 'none', width: '100%' }}
+                              style={{ padding: '4px 8px', borderRadius: '6px', background: '#241a1c', color: '#d4c4c1', border: 'none', width: '100%' }}
                           >
                               <option value="down">Down</option>
                               <option value="up">Up</option>
@@ -2010,69 +2227,67 @@ export default function RoughImageGenerator(): JSX.Element {
                               <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Flow Chance:</label>
                               <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{Math.round(flowChance*100)}%</span>
                           </div>
-                          <input type="range" min={0} max={1} step={0.05} value={flowChance} onChange={(e) => setFlowChance(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                          <input type="range" min={0} max={1} step={0.05} value={flowChance} onChange={(e) => setFlowChance(Number(e.target.value))} className="slider-input" />
                       </div>
                   </div>
                 )}
 
                 {spreadPattern === 'vein' && (
-                  <div style={{background: '#2c2c2e', padding: '8px', borderRadius: '6px'}}>
+                  <div>
                     <div style={{ marginBottom: '8px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                           <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Seek Strength:</label>
                           <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{Math.round(veinSeekStrength*100)}%</span>
                         </div>
-                        <input type="range" min={0} max={1} step={0.05} value={veinSeekStrength} onChange={(e) => setVeinSeekStrength(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                        <input type="range" min={0} max={1} step={0.05} value={veinSeekStrength} onChange={(e) => setVeinSeekStrength(Number(e.target.value))} className="slider-input" />
                     </div>
                     <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                           <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Branching Chance:</label>
                           <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{Math.round(veinBranchChance*100)}%</span>
                         </div>
-                        <input type="range" min={0} max={0.5} step={0.01} value={veinBranchChance} onChange={(e) => setVeinBranchChance(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                        <input type="range" min={0} max={0.5} step={0.01} value={veinBranchChance} onChange={(e) => setVeinBranchChance(Number(e.target.value))} className="slider-input" />
                     </div>
                   </div>
                 )}
 
                 {spreadPattern === 'crystallize' && (
-                  <div style={{background: '#2c2c2e', padding: '8px', borderRadius: '6px'}}>
-                    <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                          <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Growth Threshold:</label>
-                          <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{crystallizeThreshold} Neighbors</span>
-                        </div>
-                        <input type="range" min={1} max={8} value={crystallizeThreshold} onChange={(e) => setCrystallizeThreshold(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                      <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Growth Threshold:</label>
+                      <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{crystallizeThreshold} Neighbors</span>
                     </div>
+                    <input type="range" min={1} max={8} value={crystallizeThreshold} onChange={(e) => setCrystallizeThreshold(Number(e.target.value))} className="slider-input" />
                   </div>
                 )}
-                
+
                 {spreadPattern === 'erosion' && (
-                  <div style={{background: '#2c2c2e', padding: '8px', borderRadius: '6px'}}>
+                  <div>
                      <div style={{ marginBottom: '8px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                           <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Erosion Rate:</label>
                           <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{Math.round(erosionRate*100)}%</span>
                         </div>
-                        <input type="range" min={0.01} max={1} step={0.01} value={erosionRate} onChange={(e) => setErosionRate(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                        <input type="range" min={0.01} max={1} step={0.01} value={erosionRate} onChange={(e) => setErosionRate(Number(e.target.value))} className="slider-input" />
                     </div>
                     <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                           <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Core Protection:</label>
                           <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{erosionSolidity} Neighbors</span>
                         </div>
-                        <input type="range" min={1} max={8} value={erosionSolidity} onChange={(e) => setErosionSolidity(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                        <input type="range" min={1} max={8} value={erosionSolidity} onChange={(e) => setErosionSolidity(Number(e.target.value))} className="slider-input" />
                     </div>
                   </div>
                 )}
 
                 {spreadPattern === 'random' && (
-                    <div style={{background: '#2c2c2e', padding: '8px', borderRadius: '6px'}}>
+                    <div>
                         <div style={{ marginBottom: '10px' }}>
                             <label style={{ fontSize: '0.85rem', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Walk Mode:</label>
                             <select
                                 value={randomWalkMode}
                                 onChange={(e) => setRandomWalkMode(e.target.value as any)}
-                                style={{ padding: '4px 8px', borderRadius: '6px', background: '#3a3a3c', color: '#fff', border: 'none', width: '100%' }}
+                                style={{ padding: '4px 8px', borderRadius: '6px', background: '#241a1c', color: '#d4c4c1', border: 'none', width: '100%' }}
                             >
                                 <option value="any">8 Directions (Any)</option>
                                 <option value="cardinal">4 Directions (Cardinal)</option>
@@ -2086,30 +2301,28 @@ export default function RoughImageGenerator(): JSX.Element {
                             <input
                             type="range" min={1} max={8} step={1} value={randomWalkSpreadCount}
                             onChange={(e) => setRandomWalkSpreadCount(Number(e.target.value))}
-                            style={{ width: '100%', height: '6px' }}
+                            className="slider-input"
                             />
                         </div>
                     </div>
                 )}
 
                 {spreadPattern === 'conway' && (
-                  <div style={{background: '#2c2c2e', padding: '8px', borderRadius: '6px'}}>
+                  <div>
                     <RuleEditor label="Survive Counts" rules={conwayRules.survive} onChange={(newSurvive) => setConwayRules(r => ({ ...r, survive: newSurvive }))} />
-
                     <RuleEditor label="Birth Counts" rules={conwayRules.born} onChange={(newBorn) => setConwayRules(r => ({ ...r, born: newBorn }))} />
                   </div>
                 )}
-                
-                {spreadPattern === 'tendrils' && (
-                  <div style={{background: '#2c2c2e', padding: '8px', borderRadius: '6px'}}>
-                     <RuleEditor label="Survive Counts" rules={tendrilsRules.survive} onChange={(newSurvive) => setTendrilsRules(r => ({ ...r, survive: newSurvive }))} />
 
+                {spreadPattern === 'tendrils' && (
+                  <div>
+                     <RuleEditor label="Survive Counts" rules={tendrilsRules.survive} onChange={(newSurvive) => setTendrilsRules(r => ({ ...r, survive: newSurvive }))} />
                      <RuleEditor label="Birth Counts" rules={tendrilsRules.born} onChange={(newBorn) => setTendrilsRules(r => ({ ...r, born: newBorn }))} />
                   </div>
                 )}
-                
+
                 {spreadPattern === 'pulse' && (
-                    <div style={{background: '#2c2c2e', padding: '8px', borderRadius: '6px'}}>
+                    <div>
                         <div style={{ marginBottom: '8px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                             <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Pulse Speed:</label>
@@ -2118,7 +2331,7 @@ export default function RoughImageGenerator(): JSX.Element {
                             <input
                             type="range" min={1} max={60} value={pulseSpeed}
                             onChange={(e) => setPulseSpeed(Number(e.target.value))}
-                            style={{ width: '100%', height: '6px' }}
+                            className="slider-input"
                             />
                         </div>
                         <div style={{ marginBottom: '10px' }}>
@@ -2126,7 +2339,7 @@ export default function RoughImageGenerator(): JSX.Element {
                             <select
                                 value={pulseDirection}
                                 onChange={(e) => setPulseDirection(e.target.value as any)}
-                                style={{ padding: '4px 8px', borderRadius: '6px', background: '#3a3a3c', color: '#fff', border: 'none', width: '100%' }}
+                                style={{ padding: '4px 8px', borderRadius: '6px', background: '#241a1c', color: '#d4c4c1', border: 'none', width: '100%' }}
                             >
                                 <option value="top-left">Top-Left</option>
                                 <option value="top-right">Top-Right</option>
@@ -2134,28 +2347,26 @@ export default function RoughImageGenerator(): JSX.Element {
                                 <option value="bottom-right">Bottom-Right</option>
                             </select>
                         </div>
-                        <div style={{ fontWeight: 500, marginTop: '10px', fontSize: '0.85rem' }}>
-                            <label>
-                                <input 
-                                    type="checkbox" 
-                                    checked={pulseOvertakes} 
-                                    onChange={e => setPulseOvertakes(e.target.checked)} 
-                                    style={{ marginRight: '6px' }}
-                                /> 
-                                New Drops Overtake Existing
-                            </label>
+                        <div className="checkbox-container">
+                            <input
+                                type="checkbox"
+                                checked={pulseOvertakes}
+                                onChange={(e) => setPulseOvertakes(e.target.checked)}
+                                id="pulseOvertakes"
+                            />
+                            <label htmlFor="pulseOvertakes">New Drops Overtake Existing</label>
                         </div>
                     </div>
                 )}
 
                 {spreadPattern === 'directional' && (
-                    <div style={{background: '#2c2c2e', padding: '8px', borderRadius: '6px'}}>
+                    <div>
                       <div style={{ marginBottom: '10px' }}>
                           <label style={{ fontSize: '0.85rem', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Bias Direction:</label>
                           <select
                               value={directionalBias}
                               onChange={(e) => setDirectionalBias(e.target.value as any)}
-                              style={{ padding: '4px 8px', borderRadius: '6px', background: '#3a3a3c', color: '#fff', border: 'none', width: '100%' }}
+                              style={{ padding: '4px 8px', borderRadius: '6px', background: '#241a1c', color: '#d4c4c1', border: 'none', width: '100%' }}
                           >
                                 <option value="up">Up</option>
                                 <option value="down">Down</option>
@@ -2175,7 +2386,7 @@ export default function RoughImageGenerator(): JSX.Element {
                           <input
                           type="range" min={0} max={1} step={0.05} value={directionalBiasStrength}
                           onChange={(e) => setDirectionalBiasStrength(Number(e.target.value))}
-                          style={{ width: '100%', height: '6px' }}
+                          className="slider-input"
                           />
                       </div>
                     </div>
@@ -2185,47 +2396,105 @@ export default function RoughImageGenerator(): JSX.Element {
                 )}
 
                 {showVisualSettings && (
-                  <div>
-                    <div style={{ marginBottom: '10px' }}>
-                  
-<label style={{ fontWeight: 600, marginBottom: '6px', display: 'block' }}>Blend Mode:</label>
-                  <select
-                    value={blendMode}
-                    onChange={(e) => setBlendMode(e.target.value)}
-                    style={{ 
-                      padding: '4px 8px', 
-                      borderRadius: '6px', 
-                      background: '#3a3a3c', 
-                      color: '#fff', 
-                      border: 'none',
-                      width: '100%'
-                    }}
-                  >
-                    <option value="replace">Replace</option>
-                    <option value="overlay">Overlay</option>
-                  </select>
-                </div>
+                  <div style={settingsContainerStyle}>
+                     <label style={{ fontWeight: 600, marginBottom: '12px', display: 'block', fontSize: '0.9rem', color: '#e5e7eb' }}>
+                      Visual Controls
+                    </label>
+                    <div className="slider-label" style={{ marginBottom: '6px' }}>
+                      <span>Blend Mode</span>
+                    </div>
+                    <div className="toggle-group">
+                      <button
+                        className={`toggle-option ${blendMode === 'replace' ? 'active' : ''}`}
+                        onClick={() => setBlendMode('replace')}
+                      >
+                        Replace
+                      </button>
+                      <button
+                        className={`toggle-option ${blendMode === 'overlay' ? 'active' : ''}`}
+                        onClick={() => setBlendMode('overlay')}
+                      >
+                        Overlay
+                      </button>
+                    </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-                  <label style={{ fontWeight: 600 }}>Background:</label>
-                  <input 
-                    type="color" 
-                    value={backgroundColor} 
-                    onChange={e => setBackgroundColor(e.target.value)}
-                    style={{ marginLeft: '8px' }}
-                  />
-                </div>
+                    <div className="slider-container">
+                      <div className="slider-label">
+                        <span>Cell Size</span>
+                        <span className="slider-value">{cellSize} px</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={1}
+                        max={30}
+                        step={1}
+                        value={cellSize}
+                        onChange={(e) => setCellSize(Number(e.target.value))}
 
-                <div style={{ fontWeight: 600, marginBottom: '10px' }}>
-                  <label>
-                    <input 
-                      type="checkbox" 
-                      checked={showGrid} 
-                      onChange={e => setShowGrid(e.target.checked)} 
-                    /> 
-                    Show Grid
-                  </label>
-                </div>
+                      />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', marginTop: '16px' }}>
+                      <label style={{ fontWeight: 500, fontSize: '0.85rem' }}>Background Color:</label>
+                      <input
+                        type="color"
+                        value={backgroundColor}
+                        onChange={(e) => setBackgroundColor(e.target.value)}
+                        style={{ marginLeft: '8px', border: '1px solid #1c1315', background: 'transparent', cursor: 'pointer', height: '28px', width: '40px' }}
+                      />
+                    </div>
+                    <div className="checkbox-container">
+                        <input
+                          type="checkbox"
+                          checked={showGrid}
+                          onChange={(e) => setShowGrid(e.target.checked)}
+                          id="showGridCheck"
+                        />
+                        <label htmlFor="showGridCheck">Show Grid</label>
+                    </div>
+                    <div className="checkbox-container">
+                        <input
+                          type="checkbox"
+                          checked={recordEnabled}
+                          onChange={(e) => setRecordEnabled(e.target.checked)}
+                          style={{ cursor: 'pointer' }}
+                        />
+                        <label htmlFor="showGridCheck">Recording</label>
+                    </div>
+
+
+                    {recordEnabled && (
+                      <div style={{ marginBottom: '10px' }}>
+                        <label
+                          style={{
+                            display: 'block',
+                            fontSize: '0.8rem',
+                            color: '#d1d5db',
+                            marginBottom: '6px',
+                          }}
+                        >
+                          Filename:
+                        </label>
+                        <input
+                          type="text"
+                          value={recordingFilename}
+                          onChange={(e) => setRecordingFilename(e.target.value)}
+                          placeholder="Enter filename (no extension)"
+                          style={{
+                            width: '100%',
+                            padding: '6px 8px',
+                            marginBottom: '8px',
+                            borderRadius: '6px',
+                            border: '1px solid #555',
+                            background: '#2a2a2a',
+                            color: '#fff',
+                            fontSize: '0.9rem',
+                          }}
+                        />
+                        <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '4px' }}>
+                          Press <strong>R</strong> to start/stop recording
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </>
@@ -2233,22 +2502,30 @@ export default function RoughImageGenerator(): JSX.Element {
           </div>
         </div>
       </div>
-      
-      <div ref={canvasContainerRef} style={{ 
+
+      <div ref={canvasContainerRef} style={{
+        flex: 1,
         display: 'flex',
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
+        paddingLeft: '380px',
+        paddingRight: '24px',
+        paddingTop: '24px',
+        paddingBottom: '24px'
       }}>
         <canvas
           ref={canvasRef}
-          style={{ 
-            display: 'block', 
-            cursor: 'default', 
-            background: backgroundColor 
+          style={{
+            display: 'block',
+            cursor: 'default',
+            background: backgroundColor,
+            border: 'none',
+            boxShadow: 'inset 0 0 0 1px #1c1315, inset 2px 2px 8px rgba(0,0,0,0.8), inset -1px -1px 4px #1a1214',
+            clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)'
           }}
         />
       </div>
-      
+
       {/* Resize Dialog */}
       {showResizeDialog && (
         <div style={{
@@ -2257,7 +2534,8 @@ export default function RoughImageGenerator(): JSX.Element {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          backgroundColor: 'rgba(12, 7, 8, 0.95)',
+          backdropFilter: 'blur(16px)',
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
@@ -2269,15 +2547,15 @@ export default function RoughImageGenerator(): JSX.Element {
             borderRadius: '12px',
             border: '1px solid #333',
             maxWidth: '500px',
-            color: '#fff'
+            color: '#d4c4c1'
           }}>
-            <h3 style={{ marginTop: 0, color: '#fff', fontSize: '18px' }}>Large Image Detected</h3>
+            <h3 style={{ marginTop: 0, color: '#d4c4c1', fontSize: '18px' }}>Large Image Detected</h3>
             <p style={{ marginBottom: '16px', lineHeight: '1.5' }}>
-              Your image is {pendingImage?.width} × {pendingImage?.height} pixels, which may be too large for comfortable viewing. 
+              Your image is {pendingImage?.width} × {pendingImage?.height} pixels, which may be too large for comfortable viewing.
               A grid this size would create {pendingImage?.width && pendingImage?.height ? (pendingImage.width * pendingImage.height).toLocaleString() : 'many'} cells.
             </p>
             <p style={{ marginBottom: '20px', lineHeight: '1.5' }}>
-              We recommend resizing to {suggestedSize.width} × {suggestedSize.height} pixels 
+              We recommend resizing to {suggestedSize.width} × {suggestedSize.height} pixels
               ({(suggestedSize.width * suggestedSize.height).toLocaleString()} cells) for better performance.
             </p>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
@@ -2285,8 +2563,8 @@ export default function RoughImageGenerator(): JSX.Element {
                 onClick={handleResizeAccept}
                 style={{
                   padding: '10px 20px',
-                  backgroundColor: '#0066cc',
-                  color: '#fff',
+                  backgroundColor: '#666',
+                  color: '#ffffff',
                   border: 'none',
                   borderRadius: '6px',
                   cursor: 'pointer',
@@ -2301,7 +2579,7 @@ export default function RoughImageGenerator(): JSX.Element {
                 style={{
                   padding: '10px 20px',
                   backgroundColor: '#666',
-                  color: '#fff',
+                  color: '#d4c4c1',
                   border: 'none',
                   borderRadius: '6px',
                   cursor: 'pointer',
