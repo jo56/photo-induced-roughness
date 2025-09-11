@@ -1766,13 +1766,35 @@ return () => window.removeEventListener('resize', handleResize);
             background: 'linear-gradient(180deg, transparent 0%, rgba(12, 7, 8, 0.3) 100%)'
           }}>
 
-            <div className="upload-area" onClick={() => document.getElementById('imageUpload')?.click()}>
-              <div className="upload-text">
-                {imageFile ? `Uploaded: ${imageFile.name}` : 'Click to upload an image'}
+            <div
+              style={{
+                background: 'linear-gradient(180deg, #1a1214 0%, #0c0708 100%)',
+                border: '1px solid #1c1315',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)',
+                borderRadius: '6px',
+                padding: '12px',
+                textAlign: 'center',
+                cursor: 'pointer',
+                marginBottom: '20px',
+                userSelect: 'none',
+              }}
+              onClick={() => document.getElementById('imageUpload')?.click()}
+            >
+              <div style={{ fontWeight: 500, fontSize: '0.9rem', marginBottom: imageFile ? '4px' : '0', color: '#b0a09d' }}>
+                {imageFile ? 'Change Image' : 'Load Image From File'}
               </div>
-              <div className="upload-button">
-                {imageFile ? 'Change Image' : 'Upload Image'}
-              </div>
+              {imageFile && (
+                <div style={{
+                  fontSize: '0.75rem',
+                  color: '#8a7a77',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  maxWidth: '100%'
+                }}>
+                  {imageFile.name}
+                </div>
+              )}
               <input
                 id="imageUpload"
                 type="file"
@@ -1780,13 +1802,6 @@ return () => window.removeEventListener('resize', handleResize);
                 onChange={handleImageUpload}
                 style={{ display: 'none' }}
               />
-              {uploadedImage && (
-                <img
-                  src={uploadedImage.src}
-                  alt="Preview"
-                  className="image-preview"
-                />
-              )}
             </div>
 
 
