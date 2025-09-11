@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
+
 const GRID_COLOR = '#27272a';
 
 function createEmptyGrid(rows: number, cols: number): number[][] {
@@ -11,7 +12,14 @@ function createEmptyGrid(rows: number, cols: number): number[][] {
 }
 
 function cloneGrid(grid: number[][]): number[][] {
-  return grid.map(row => [...row]);
+  const newGrid = new Array(grid.length);
+  for (let i = 0; i < grid.length; i++) {
+    newGrid[i] = new Array(grid[i].length);
+    for (let j = 0; j < grid[i].length; j++) {
+      newGrid[i][j] = grid[i][j];
+    }
+  }
+  return newGrid;
 }
 
 function RuleEditor({ label, rules, onChange }: { label: string, rules: number[], onChange: (rules: number[]) => void }) {
@@ -47,10 +55,9 @@ function RuleEditor({ label, rules, onChange }: { label: string, rules: number[]
 type Direction = 'up' | 'down' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 type SpreadPattern = 'random' | 'conway' | 'pulse' | 'directional' | 'tendrils' | 'vein' | 'crystallize' | 'erosion' | 'flow' | 'jitter' | 'vortex' | 'strobe' | 'scramble' | 'ripple';
 
-type BrushType = 'square' | 'circle' | 'diagonal' | 'spray'; // BRUSH PATCH
 
 
-export default function ModularSettingsPaintStudio(): JSX.Element {
+export default function RoughImageGenerator(): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const canvasContainerRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -67,17 +74,14 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
   const ripplesRef = useRef<{r: number, c: number, color: number, radius: number, maxRadius: number}[]>([]);
 
   const defaults = {
-    cellSize: 10,
-    rows: 100,
-    cols: 165,
+    cellSize: 2,
+    rows: 375,
+    cols: 375,
     showGrid: false,
     backgroundColor: '#0a0a0a',
-    brushSize: 2,
     selectedColor: 1,
-    spreadProbability: 0.2,
+    spreadProbability: 0.3,
     autoSpreadSpeed: 3,
-    autoDotsSpeed: 2,
-    autoShapesSpeed: 1,
     blendMode: 'replace',
     spreadPattern: 'random' as SpreadPattern,
     pulseSpeed: 10,
@@ -90,18 +94,18 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
     randomWalkSpreadCount: 1,
     randomWalkMode: 'any' as const,
     veinSeekStrength: 0.5,
-    veinBranchChance: 0.1,
+    veinBranchChance: 0.15,
     crystallizeThreshold: 2,
-    erosionRate: 0.5,
-    erosionSolidity: 3,
+    erosionRate: 0.3,
+    erosionSolidity: 4,
     flowDirection: 'down' as Direction,
-    flowChance: 0.5,
-    jitterChance: 0.3,
-    vortexCount: 5,
+    flowChance: 0.7,
+    jitterChance: 0.4,
+    vortexCount: 8,
     strobeExpandThreshold: 2,
-    strobeContractThreshold: 3,
-    scrambleSwaps: 10,
-    rippleChance: 0.05,
+    strobeContractThreshold: 4,
+    scrambleSwaps: 15,
+    rippleChance: 0.15,
   };
 
   const [palette, setPalette] = useState([
@@ -115,32 +119,24 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
   const [grid, setGrid] = useState<number[][]>(() => createEmptyGrid(defaults.rows, defaults.cols));
   const [showGrid, setShowGrid] = useState(defaults.showGrid);
   const [backgroundColor, setBackgroundColor] = useState(defaults.backgroundColor);
-  const [brushSize, setBrushSize] = useState(defaults.brushSize);
   const [selectedColor, setSelectedColor] = useState(defaults.selectedColor);
+  const [uploadedImage, setUploadedImage] = useState<HTMLImageElement | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [originalGrid, setOriginalGrid] = useState<number[][] | null>(null);
+  const [showResizeDialog, setShowResizeDialog] = useState(false);
+  const [pendingImage, setPendingImage] = useState<HTMLImageElement | null>(null);
+  const [suggestedSize, setSuggestedSize] = useState({ width: 0, height: 0 });
   const [spreadProbability, setSpreadProbability] = useState(defaults.spreadProbability);
   const [autoSpreadSpeed, setAutoSpreadSpeed] = useState(defaults.autoSpreadSpeed);
-  const [autoDotsSpeed, setAutoDotsSpeed] = useState(defaults.autoDotsSpeed);
-  const [autoShapesSpeed, setAutoShapesSpeed] = useState(defaults.autoShapesSpeed);
   const [autoSpreading, setAutoSpreading] = useState(false);
-  const [autoDots, setAutoDots] = useState(false);
-  const [autoShapes, setAutoShapes] = useState(false);
   const [autoSpreadEnabled, setAutoSpreadEnabled] = useState(true);
+  const [autoDots, setAutoDots] = useState(false);
   const [autoDotsEnabled, setAutoDotsEnabled] = useState(true);
+  const [autoDotsSpeed, setAutoDotsSpeed] = useState(defaults.autoDotsSpeed || 1);
+  const [autoShapes, setAutoShapes] = useState(false);
   const [autoShapesEnabled, setAutoShapesEnabled] = useState(true);
+  const [autoShapesSpeed, setAutoShapesSpeed] = useState(defaults.autoShapesSpeed || 1);
   const [blendMode, setBlendMode] = useState(defaults.blendMode);
-  const [tool, setTool] = useState('brush');
-  const [brushType, setBrushType] = useState<BrushType>('square');
-    const [sprayDensity, setSprayDensity] = useState(0.3); // BRUSH PATCH
-  const [diagonalThickness, setDiagonalThickness] = useState(1);
-  const brushTypeRef = useRef<BrushType>('square'); // BRUSH PATCH
-    const sprayDensityRef = useRef(sprayDensity); // BRUSH PATCH
-  const diagonalThicknessRef = useRef(diagonalThickness); // BRUSH PATCH
-
-  useEffect(() => { brushTypeRef.current = brushType; }, [brushType]); // BRUSH PATCH
-    useEffect(() => { sprayDensityRef.current = sprayDensity; }, [sprayDensity]); // BRUSH PATCH
-  useEffect(() => { diagonalThicknessRef.current = diagonalThickness; }, [diagonalThickness]); // BRUSH PATCH
- // BRUSH PATCH
- // BRUSH PATCH
   const [panelMinimized, setPanelMinimized] = useState(false);
   const [showSpeedSettings, setShowSpeedSettings] = useState(false);
   const [showCanvasSettings, setShowCanvasSettings] = useState(false);
@@ -151,7 +147,6 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
   const [showOptions, setShowOptions] = useState(true);
   const [customColor, setCustomColor] = useState('#ffffff');
   const [isSavingColor, setIsSavingColor] = useState(false);
-  const [generativeColorIndices, setGenerativeColorIndices] = useState(() => palette.slice(1).map((_, index) => index + 1));
   const [spreadPattern, setSpreadPattern] = useState<SpreadPattern>(defaults.spreadPattern);
   const [pulseSpeed, setPulseSpeed] = useState(defaults.pulseSpeed);
   const [directionalBias, setDirectionalBias] = useState<'none' | Direction>(defaults.directionalBias);
@@ -176,7 +171,6 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
   const [scrambleSwaps, setScrambleSwaps] = useState(defaults.scrambleSwaps);
   const [rippleChance, setRippleChance] = useState(defaults.rippleChance);
 
-  const generativeColorIndicesRef = useRef(generativeColorIndices);
   const spreadProbabilityRef = useRef(spreadProbability);
   const autoSpreadSpeedRef = useRef(autoSpreadSpeed);
   const autoDotsSpeedRef = useRef(autoDotsSpeed);
@@ -211,7 +205,6 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
   useEffect(() => { autoSpreadSpeedRef.current = autoSpreadSpeed; }, [autoSpreadSpeed]);
   useEffect(() => { autoDotsSpeedRef.current = autoDotsSpeed; }, [autoDotsSpeed]);
   useEffect(() => { autoShapesSpeedRef.current = autoShapesSpeed; }, [autoShapesSpeed]);
-  useEffect(() => { generativeColorIndicesRef.current = generativeColorIndices; }, [generativeColorIndices]);
   useEffect(() => { rowsRef.current = rows; }, [rows]);
   useEffect(() => { colsRef.current = cols; }, [cols]);
   useEffect(() => { spreadPatternRef.current = spreadPattern; }, [spreadPattern]);
@@ -333,22 +326,33 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
     canvas.width = cols * cellSize;
     canvas.height = rows * cellSize;
 
+    // Clear canvas once
     ctx.fillStyle = backgroundColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Batch same-colored cells to reduce fillStyle changes
+    const colorGroups = new Map<string, Array<{r: number, c: number}>>();
 
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const colorIndex = grid[r]?.[c];
         if (colorIndex > 0) {
-          if (colorIndex === palette.length) {
-            ctx.fillStyle = customColor;
-          } else {
-            ctx.fillStyle = palette[colorIndex];
+          const colorKey = colorIndex === palette.length ? customColor : palette[colorIndex];
+          if (!colorGroups.has(colorKey)) {
+            colorGroups.set(colorKey, []);
           }
-          ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+          colorGroups.get(colorKey)!.push({r, c});
         }
       }
     }
+
+    // Draw each color group at once
+    colorGroups.forEach((cells, color) => {
+      ctx.fillStyle = color;
+      cells.forEach(({r, c}) => {
+        ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+      });
+    });
 
     if (showGrid) {
       ctx.strokeStyle = GRID_COLOR;
@@ -370,122 +374,149 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
 
   useEffect(() => draw(), [draw]);
 
-  const paintCell = (r: number, c: number, color: number) => {
-    if (r < 0 || r >= rows || c < 0 || c >= cols) return;
-    
-    setGrid(g => {
-      const ng = cloneGrid(g);
-      for (let dr = -Math.floor(brushSize/2); dr <= Math.floor(brushSize/2); dr++) {
-        for (let dc = -Math.floor(brushSize/2); dc <= Math.floor(brushSize/2); dc++) {
-          const nr = r + dr;
-          const nc = c + dc;
-          if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
-            let shouldPaint = false; // BRUSH PATCH
-            switch (brushTypeRef.current) { // BRUSH PATCH
-              case 'square':
-                shouldPaint = true;
-                break;
-              case 'circle': {
-  const radius = Math.floor(brushSize / 2);
-  shouldPaint = dr * dr + dc * dc <= radius * radius;
-  break;
-}
-              case 'diagonal':
-                shouldPaint = Math.abs(dr) === Math.abs(dc) && Math.abs(dr) <= diagonalThicknessRef.current;
-                break;
-              case 'spray':
-                shouldPaint = Math.random() < sprayDensityRef.current;
-                break;
-            }
-            if (!shouldPaint) continue;
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-            if (blendMode === 'replace' || ng[nr][nc] === 0) {
-              ng[nr][nc] = color;
-            } else if (blendMode === 'overlay' && color > 0) {
-              ng[nr][nc] = color;
-            }
+    setImageFile(file);
+    const img = new Image();
+    img.onload = () => {
+      // Check if image is larger than screen
+      const maxWidth = Math.floor(window.innerWidth * 0.8 / cellSize);
+      const maxHeight = Math.floor(window.innerHeight * 0.8 / cellSize);
+      
+      if (img.width > maxWidth || img.height > maxHeight) {
+        // Calculate suggested size maintaining aspect ratio
+        const aspectRatio = img.width / img.height;
+        let newWidth = Math.min(img.width, maxWidth);
+        let newHeight = Math.min(img.height, maxHeight);
+        
+        if (newWidth / aspectRatio > maxHeight) {
+          newWidth = maxHeight * aspectRatio;
+        } else {
+          newHeight = newWidth / aspectRatio;
+        }
+        
+        setSuggestedSize({ 
+          width: Math.floor(newWidth), 
+          height: Math.floor(newHeight) 
+        });
+        setPendingImage(img);
+        setShowResizeDialog(true);
+      } else {
+        setUploadedImage(img);
+        convertImageToGrid(img);
+      }
+    };
+    img.src = URL.createObjectURL(file);
+  };
+
+  const handleResizeAccept = () => {
+    if (pendingImage) {
+      const scaledImage = createScaledImage(pendingImage, suggestedSize.width, suggestedSize.height);
+      scaledImage.onload = () => {
+        setUploadedImage(scaledImage);
+        convertImageToGrid(scaledImage);
+        setShowResizeDialog(false);
+        setPendingImage(null);
+      };
+    }
+  };
+
+  const handleResizeReject = () => {
+    if (pendingImage) {
+      setUploadedImage(pendingImage);
+      convertImageToGrid(pendingImage);
+      setShowResizeDialog(false);
+      setPendingImage(null);
+    }
+  };
+
+  const createScaledImage = (img: HTMLImageElement, targetWidth: number, targetHeight: number): HTMLImageElement => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas not supported');
+
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+    ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+    const scaledImg = new Image();
+    scaledImg.src = canvas.toDataURL();
+    return scaledImg;
+  };
+
+  const convertImageToGrid = (img: HTMLImageElement) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Use image dimensions directly for 1:1 pixel mapping
+    const imageWidth = img.width;
+    const imageHeight = img.height;
+    
+    canvas.width = imageWidth;
+    canvas.height = imageHeight;
+    
+    // Draw image at original size for exact pixel mapping
+    ctx.drawImage(img, 0, 0);
+    
+    const imageData = ctx.getImageData(0, 0, imageWidth, imageHeight);
+    const newGrid = createEmptyGrid(imageHeight, imageWidth);
+    const newPalette = [...palette];
+    const colorMap = new Map<string, number>();
+
+    // Initialize existing palette colors in the map
+    for (let i = 0; i < palette.length; i++) {
+      colorMap.set(palette[i].toLowerCase(), i);
+    }
+
+    for (let r = 0; r < imageHeight; r++) {
+      for (let c = 0; c < imageWidth; c++) {
+        const pixelIndex = (r * imageWidth + c) * 4;
+        const red = imageData.data[pixelIndex];
+        const green = imageData.data[pixelIndex + 1];
+        const blue = imageData.data[pixelIndex + 2];
+        const alpha = imageData.data[pixelIndex + 3];
+
+        if (alpha < 128) {
+          newGrid[r][c] = 0;
+        } else {
+          const rgb = `#${red.toString(16).padStart(2, '0')}${green.toString(16).padStart(2, '0')}${blue.toString(16).padStart(2, '0')}`;
+          
+          // Check if this exact color already exists
+          let colorIndex = colorMap.get(rgb.toLowerCase());
+          
+          if (colorIndex === undefined) {
+            // Color doesn't exist, add it to the palette
+            colorIndex = newPalette.length;
+            newPalette.push(rgb);
+            colorMap.set(rgb.toLowerCase(), colorIndex);
           }
+
+          newGrid[r][c] = colorIndex;
         }
       }
-      return ng;
-    });
-  };
-
-  const floodFill = (startR: number, startC: number, newColor: number) => {
-    setGrid(g => {
-      const ng = cloneGrid(g);
-      const originalColor = g[startR][startC];
-      
-      if (originalColor === newColor) return ng;
-      
-      const queue: [number, number][] = [[startR, startC]];
-      const visited = new Set<string>();
-      
-      while (queue.length > 0) {
-        const [r, c] = queue.shift()!;
-        const key = `${r},${c}`;
-        
-        if (r < 0 || r >= rows || c < 0 || c >= cols || visited.has(key)) {
-          continue;
-        }
-        
-        if (ng[r][c] !== originalColor) {
-          continue;
-        }
-        
-        ng[r][c] = newColor;
-        visited.add(key);
-        
-        queue.push([r - 1, c]);
-        queue.push([r + 1, c]);
-        queue.push([r, c - 1]);
-        queue.push([r, c + 1]);
-      }
-      
-      return ng;
-    });
-  };
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    if (isSavingColor) {
-      setIsSavingColor(false);
-      return;
     }
-    
-    const rect = canvas.getBoundingClientRect();
-    const x = Math.floor((e.clientX - rect.left) / cellSize);
-    const y = Math.floor((e.clientY - rect.top) / cellSize);
-    
-    if (tool === 'fill') {
-      floodFill(y, x, selectedColor);
-    } else {
-      isMouseDown.current = true;
-      const colorToUse = tool === 'eraser' ? 0 : selectedColor;
-      paintCell(y, x, colorToUse);
-    }
+
+    // Update grid dimensions to match image
+    setRows(imageHeight);
+    setCols(imageWidth);
+    setPalette(newPalette);
+    setGrid(newGrid);
+    setOriginalGrid(cloneGrid(newGrid));
   };
 
-  const handleMouseUp = () => { 
-    isMouseDown.current = false; 
-  };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isMouseDown.current || tool === 'fill') return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = Math.floor((e.clientX - rect.left) / cellSize);
-    const y = Math.floor((e.clientY - rect.top) / cellSize);
-    
-    const colorToUse = tool === 'eraser' ? 0 : selectedColor;
-    paintCell(y, x, colorToUse);
-  };
+
+
 
   const clear = () => {
-    setGrid(createEmptyGrid(rows, cols));
+    if (originalGrid) {
+      setGrid(cloneGrid(originalGrid));
+    } else {
+      setGrid(createEmptyGrid(rows, cols));
+    }
     setIsSavingColor(false);
   };
 
@@ -494,15 +525,16 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
     const currentRows = rowsRef.current;
     const currentCols = colsRef.current;
 
+
     setGrid(g => {
         let ng = cloneGrid(g);
 
         switch (pattern) {
             case 'ripple': {
-                // Update existing ripples
+                // Update existing ripples - use fewer points for better performance
                 ripplesRef.current.forEach(ripple => {
                     const r = Math.round(ripple.radius);
-                    for (let i = 0; i < 360; i += 5) {
+                    for (let i = 0; i < 360; i += 15) { // Reduced from 5 to 15 degrees
                         const angle = i * Math.PI / 180;
                         const nr = Math.round(ripple.r + r * Math.sin(angle));
                         const nc = Math.round(ripple.c + r * Math.cos(angle));
@@ -516,10 +548,11 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
                 // Filter out old ripples
                 ripplesRef.current = ripplesRef.current.filter(r => r.radius <= r.maxRadius);
 
-                // Create new ripples
+                // Create new ripples - sample fewer cells
                 const chance = rippleChanceRef.current;
-                for (let r = 0; r < currentRows; r++) {
-                    for (let c = 0; c < currentCols; c++) {
+                const step = Math.max(1, Math.floor(Math.sqrt(currentRows * currentCols) / 50)); // Dynamic sampling
+                for (let r = 0; r < currentRows; r += step) {
+                    for (let c = 0; c < currentCols; c += step) {
                         if (g[r][c] > 0 && Math.random() < chance) {
                             ripplesRef.current.push({
                                 r, c, color: g[r][c], radius: 1, maxRadius: Math.max(currentRows, currentCols) / 3
@@ -530,6 +563,7 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
                 break;
             }
             case 'scramble': {
+                // Scan for colored cells each time for accuracy
                 const coloredCells: {r: number, c: number, color: number}[] = [];
                 for (let r = 0; r < currentRows; r++) {
                     for (let c = 0; c < currentCols; c++) {
@@ -700,18 +734,18 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
                 let r_start = 0, r_end = currentRows, r_inc = 1;
                 let c_start = 0, c_end = currentCols, c_inc = 1;
         
-                if (dir.includes('down')) { r_start = currentRows - 1; r_end = -1; r_inc = -1; }
-                if (dir.includes('right')) { c_start = currentCols - 1; c_end = -1; c_inc = -1; }
+                if (dir === 'up') { r_start = currentRows - 1; r_end = -1; r_inc = -1; }
+                if (dir === 'left') { c_start = currentCols - 1; c_end = -1; c_inc = -1; }
         
                 for (let r = r_start; r !== r_end; r += r_inc) {
                     for (let c = c_start; c !== c_end; c += c_inc) {
                         const color = g[r]?.[c];
                         if (color > 0 && Math.random() < chance) {
                             let dr = 0, dc = 0;
-                            if (dir.includes('up')) dr = -1;
-                            if (dir.includes('down')) dr = 1;
-                            if (dir.includes('left')) dc = -1;
-                            if (dir.includes('right')) dc = 1;
+                            if (dir === 'up') dr = -1;
+                            else if (dir === 'down') dr = 1;
+                            else if (dir === 'left') dc = -1;
+                            else if (dir === 'right') dc = 1;
         
                             const nr = r + dr;
                             const nc = c + dc;
@@ -745,10 +779,24 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
                             }
                         }
                     }
-                    if (walkers.current.length === 0 && g.flat().some(cell => cell > 0)) {
-                         let r=0, c=0;
-                         while(g[r][c] === 0) { r = Math.floor(Math.random()*currentRows); c = Math.floor(Math.random()*currentCols); }
-                         walkers.current.push({r,c, color: g[r][c]});
+                    if (walkers.current.length === 0) {
+                        // Find all colored pixels to start walkers from
+                        const coloredPixels: {r: number, c: number, color: number}[] = [];
+                        for(let r = 0; r < currentRows; r++) {
+                            for(let c = 0; c < currentCols; c++) {
+                                if(g[r][c] > 0) {
+                                    coloredPixels.push({r, c, color: g[r][c]});
+                                }
+                            }
+                        }
+                        // Start with a few random walkers if we have colored pixels
+                        if (coloredPixels.length > 0) {
+                            const numWalkers = Math.min(5, coloredPixels.length);
+                            for (let i = 0; i < numWalkers; i++) {
+                                const pixel = coloredPixels[Math.floor(Math.random() * coloredPixels.length)];
+                                walkers.current.push({r: pixel.r, c: pixel.c, color: pixel.color});
+                            }
+                        }
                     }
                 }
 
@@ -775,14 +823,12 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
                         bestDir = { dr: Math.floor(Math.random() * 3) - 1, dc: Math.floor(Math.random() * 3) - 1 };
                     }
                     
-                    walker.r += bestDir.dr;
-                    walker.c += bestDir.dc;
-                    walker.r = Math.max(0, Math.min(currentRows - 1, walker.r));
-                    walker.c = Math.max(0, Math.min(currentCols - 1, walker.c));
-
-                    const r_int = Math.round(walker.r);
-                    const c_int = Math.round(walker.c);
-                    ng[r_int][c_int] = walker.color;
+                    const newR = Math.max(0, Math.min(currentRows - 1, walker.r + bestDir.dr));
+                    const newC = Math.max(0, Math.min(currentCols - 1, walker.c + bestDir.dc));
+                    
+                    walker.r = Math.floor(newR);
+                    walker.c = Math.floor(newC);
+                    ng[walker.r][walker.c] = walker.color;
                     
                     if (Math.random() < veinBranchChanceRef.current) {
                         walkers.current.push({...walker});
@@ -818,6 +864,30 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
                                    }
                                }
                            }
+                       } else if (Math.random() < 0.05) {
+                           // Occasionally allow crystallization to replace existing pixels
+                           const neighbors: number[] = [];
+                           for (let dr = -1; dr <= 1; dr++) {
+                               for (let dc = -1; dc <= 1; dc++) {
+                                   if (dr === 0 && dc === 0) continue;
+                                   const nr = r + dr, nc = c + dc;
+                                   if (nr >= 0 && nr < currentRows && nc >= 0 && nc < currentCols && g[nr][nc] > 0 && g[nr][nc] !== g[r][c]) {
+                                       neighbors.push(g[nr][nc]);
+                                   }
+                               }
+                           }
+                           
+                           if (neighbors.length >= crystallizeThresholdRef.current + 2) {
+                               const counts: {[key:number]: number} = {};
+                               neighbors.forEach(n => { counts[n] = (counts[n] || 0) + 1; });
+                               
+                               for(const color in counts) {
+                                   if (counts[color] >= crystallizeThresholdRef.current + 1) {
+                                       ng[r][c] = parseInt(color);
+                                       break;
+                                   }
+                               }
+                           }
                        }
                     }
                 }
@@ -826,7 +896,7 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
             case 'erosion': {
                 for(let r = 0; r < currentRows; r++) {
                     for(let c = 0; c < currentCols; c++) {
-                        if (g[r][c] > 0 && Math.random() < erosionRateRef.current) {
+                        if (g[r][c] > 0) {
                             let emptyNeighbors = 0;
                             for (let dr = -1; dr <= 1; dr++) {
                                 for (let dc = -1; dc <= 1; dc++) {
@@ -837,7 +907,7 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
                                     }
                                 }
                             }
-                            if (emptyNeighbors >= erosionSolidityRef.current) {
+                            if (emptyNeighbors >= erosionSolidityRef.current && Math.random() < erosionRateRef.current) {
                                 ng[r][c] = 0;
                             }
                         }
@@ -851,6 +921,14 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
                 const BORN = rules.born;
                 const SURVIVE = rules.survive;
                 
+                // First, preserve all existing pixels
+                for (let r = 0; r < currentRows; r++) {
+                    for (let c = 0; c < currentCols; c++) {
+                        ng[r][c] = g[r][c]; // Copy existing state
+                    }
+                }
+                
+                // Then apply cellular automata rules only to empty spaces and unstable pixels
                 for (let r = 0; r < currentRows; r++) {
                     for (let c = 0; c < currentCols; c++) {
                         let liveNeighbors = 0;
@@ -868,10 +946,14 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
                         }
 
                         const isAlive = g[r]?.[c] > 0;
-                        if (isAlive && !SURVIVE.includes(liveNeighbors)) {
+                        
+                        // Only apply death rules with low probability to preserve image
+                        if (isAlive && !SURVIVE.includes(liveNeighbors) && Math.random() < 0.1) {
                             ng[r][c] = 0;
-                        } else if (!isAlive && BORN.includes(liveNeighbors)) {
-                           const colorCounts = neighborColors.reduce((acc, color) => {
+                        }
+                        // Apply birth rules to empty spaces
+                        else if (!isAlive && BORN.includes(liveNeighbors)) {
+                            const colorCounts = neighborColors.reduce((acc, color) => {
                                 acc[color] = (acc[color] || 0) + 1;
                                 return acc;
                             }, {} as Record<number, number>);
@@ -884,7 +966,7 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
                                     dominantColor = parseInt(color);
                                 }
                             }
-                            ng[r][c] = dominantColor > 0 ? dominantColor : (generativeColorIndicesRef.current[0] || 1);
+                            ng[r][c] = dominantColor > 0 ? dominantColor : 1;
                         }
                     }
                 }
@@ -1045,7 +1127,7 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
   const addRandomDots = useCallback(() => {
     setGrid(g => {
         const ng = cloneGrid(g);
-        const availableColors = generativeColorIndicesRef.current.length > 0 ? generativeColorIndicesRef.current : palette.slice(1).map((_, i) => i + 1);
+        const availableColors = palette.slice(1).map((_, i) => i + 1);
         if (availableColors.length === 0) return ng;
 
         const numDots = Math.floor(Math.random() * 6) + 5;
@@ -1063,7 +1145,7 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
   const addRandomShapes = useCallback(() => {
     setGrid(g => {
         const ng = cloneGrid(g);
-        const availableColors = generativeColorIndicesRef.current.length > 0 ? generativeColorIndicesRef.current : palette.slice(1).map((_, i) => i + 1);
+        const availableColors = palette.slice(1).map((_, i) => i + 1);
         if (availableColors.length === 0) return ng;
 
         const currentRows = rowsRef.current;
@@ -1114,6 +1196,7 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
 
   const runAutoSpread = useCallback(() => {
     let lastTime = performance.now();
+    let frameCount = 0;
     const loop = (time: number) => {
       if (!runningRef.current) return;
 
@@ -1123,6 +1206,15 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
         : autoSpreadSpeedRef.current;
       
       const interval = 1000 / Math.max(0.25, speed);
+
+      // Skip frames for very slow speeds to reduce CPU usage
+      if (speed < 1) {
+        frameCount++;
+        if (frameCount % Math.ceil(60 / Math.max(0.25, speed)) !== 0) {
+          rafRef.current = requestAnimationFrame(loop);
+          return;
+        }
+      }
 
       if (time - lastTime >= interval) {
         colorSpread();
@@ -1315,15 +1407,6 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
     }
   };
   
-  const handleGenerativeColorToggle = (colorIndex: number) => {
-    setGenerativeColorIndices(prev => {
-        if (prev.includes(colorIndex)) {
-            return prev.filter(i => i !== colorIndex);
-        } else {
-            return [...prev, colorIndex];
-        }
-    });
-  };
 
   const resetGenerativeSettings = () => {
     setSpreadPattern(defaults.spreadPattern);
@@ -1361,46 +1444,30 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
       background: 'black',
       display: 'flex',
       flexDirection: isMobile ? 'column' : 'row',
-      alignItems: 'flex-start',
-      color: '#fff'
+      justifyContent: 'center',
+      alignItems: 'center',
+      color: '#fff',
+      gap: '20px'
     }}>
-      <div ref={canvasContainerRef} style={{ padding: '10px', display: 'inline-block' }}>
-        <canvas
-          ref={canvasRef}
-          onMouseDown={handleMouseDown}
-          onMouseUp={handleMouseUp}
-          onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseUp}
-          style={{ 
-            display: 'block', 
-            cursor: tool === 'fill' ? 'pointer' : 'crosshair', 
-            background: backgroundColor 
-          }}
-        />
-      </div>
-
       <div
         ref={panelRef}
         style={{
-          position: isMobile ? 'relative' : 'fixed',
-          top: isMobile ? undefined : panelPos.y,
-          left: isMobile ? undefined : panelPos.x,
-          margin: isMobile ? '0 auto' : undefined,
           background: 'rgba(39, 39, 42, 0.95)',
           padding: '12px',
           borderRadius: '10px',
-          width: isMobile ? 'calc(100% - 20px)': 'auto',
+          width: isMobile ? 'calc(100% - 20px)' : 'auto',
           maxWidth: '480px',
           zIndex: 1000,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          maxHeight: isMobile ? 'none' : '80vh',
+          overflowY: isMobile ? 'visible' : 'auto',
+          margin: isMobile ? '0 auto' : '0'
         }}
       >
         <div
-          onMouseDown={handleHeaderMouseDown}
           style={{
             fontWeight: 500,
             marginBottom: '12px',
-            cursor: 'move',
             padding: '4px',
             background: 'rgba(63, 63, 70, 0.8)',
             borderRadius: '6px',
@@ -1411,7 +1478,7 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
             alignItems: 'center',
           }}
         >
-          <span>painting-with-roughness</span>
+          <span>Rough Image Generator</span>
           <button
             onClick={() => setPanelMinimized(prev => !prev)}
             style={{
@@ -1444,30 +1511,32 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
             pointerEvents: panelMinimized ? 'none' : 'auto'
           }}>
             
+            <div className="upload-area" onClick={() => document.getElementById('imageUpload')?.click()}>
+              <div className="upload-text">
+                {imageFile ? `Uploaded: ${imageFile.name}` : 'Click to upload an image'}
+              </div>
+              <div className="upload-button">
+                {imageFile ? 'Change Image' : 'Upload Image'}
+              </div>
+              <input
+                id="imageUpload"
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                style={{ display: 'none' }}
+              />
+              {uploadedImage && (
+                <img 
+                  src={uploadedImage.src} 
+                  alt="Preview" 
+                  className="image-preview"
+                />
+              )}
+            </div>
+            
+            
             <div style={{ marginBottom: '12px' }}>
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
-                {[
-                  { label: 'Brush', value: 'brush' },
-                  { label: 'Fill', value: 'fill' },
-                  { label: 'Eraser', value: 'eraser' }
-                ].map(({ label, value }) => (
-                  <button
-                    key={value}
-                    onClick={() => { setTool(value); setIsSavingColor(false); }}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: '6px',
-                      background: tool === value ? '#52525b' : '#3a3a3c',
-                      color: '#fff',
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontWeight: 'normal',
-                      fontSize: '0.95rem'
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
                 <button
                   onClick={() => setShowAutoControls(prev => !prev)}
                   style={{
@@ -1511,94 +1580,12 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
                     fontSize: '0.95rem'
                   }}
                 >
-                  Clear
+                  Reset
                 </button>
               </div>
             </div>
 
 
-            <div style={{ marginBottom: '12px' }}>
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
-                {palette.slice(1).map((color, index) => (
-                  <button
-                      key={index + 1}
-                      onClick={() => handlePaletteClick(index + 1)}
-                      title={isSavingColor ? `Save ${customColor} to this slot` : `Select ${color}`}
-                      style={{
-                      width: '32px',
-                      height: '32px',
-                      background: color,
-                      border: selectedColor === index + 1 ? '3px solid #fff' : '1px solid #666',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      outline: isSavingColor ? '2px dashed #54a0ff' : 'none',
-                      outlineOffset: '2px',
-                      transition: 'outline 0.2s'
-                      }}
-                  />
-                ))}
-
-                <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px', alignItems: 'center' }}>
-                  <div
-                    style={{
-                      position: 'relative',
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '6px',
-                      border: selectedColor === palette.length ? '3px solid #fff' : '1px solid #666',
-                      background: customColor,
-                      cursor: 'pointer',
-                      overflow: 'hidden'
-                    }}
-                    onClick={() => {
-                        const colorInput = panelRef.current?.querySelector('input[type="color"]') as HTMLInputElement;
-                        if (colorInput) {
-                            colorInput.click();
-                        }
-                        setSelectedColor(palette.length);
-                        setIsSavingColor(false);
-                    }}
-                  >
-                    <input
-                      type="color"
-                      value={customColor}
-                      onChange={(e) => setCustomColor(e.target.value)}
-                      style={{
-                        position: 'absolute',
-                        top: '-10px',
-                        left: '-10px',
-                        width: '52px',
-                        height: '52px',
-                        border: 'none',
-                        cursor: 'pointer',
-                      }}
-                    />
-                  </div>
-                  <button
-                    onClick={() => setIsSavingColor(prev => !prev)}
-                    title={isSavingColor ? "Cancel saving" : "Save this color to a slot"}
-                    style={{
-                        visibility: selectedColor === palette.length ? 'visible' : 'hidden',
-                        padding: '6px 0',
-                        height: '32px',
-                        borderRadius: '6px',
-                        background: isSavingColor ? '#54a0ff' : '#3a3a3c',
-                        color: '#fff',
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontSize: '0.95rem',
-                        fontWeight: 'normal',
-                        whiteSpace: 'nowrap',
-                        minWidth: '75px',
-                        textAlign: 'center'
-                    }}
-                  >
-                    {isSavingColor ? 'Cancel' : 'Save'}
-                  </button>
-                </div>
-              </div>
-              {isSavingColor && <div style={{fontSize: '0.8rem', color: '#9ca3af', marginTop: '6px'}}>Select a color slot to replace it.</div>}
-            </div>
 
             {showAutoControls && (
               <>
@@ -1720,9 +1707,7 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
             {showOptions && showStepControls && (
               <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexWrap: 'wrap' }}>
                 {[
-                  { label: 'Spread Once', onClick: colorSpread },
-                  { label: 'Add Dots', onClick: addRandomDots },
-                  { label: 'Add Shapes', onClick: addRandomShapes }
+                  { label: 'Spread Once', onClick: colorSpread }
                 ].map(({ label, onClick }) => (
                   <button
                     key={label}
@@ -1798,7 +1783,6 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
       Canvas Settings
     </label>
     {[
-      ['Brush Size', brushSize, 1, 100, 1, setBrushSize, ''],
       ['Cell Size', cellSize, 1, 30, 1, setCellSize, ' px'],
       ['Rows', rows, 10, 2000, 1, handleRowsChange, ''],
       ['Cols', cols, 10, 2000, 1, handleColsChange, '']
@@ -1883,7 +1867,9 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
               </div>
             )}
             
-            {showOptions && showGenerativeSettings && (
+            {showOptions && (
+              <>
+                {showGenerativeSettings && (
               <div style={{ marginBottom: '12px' }}>
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '10px' }}>
                   <div style={{ flexGrow: 1}}>
@@ -1914,6 +1900,7 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
                       <option value="flow">Flow</option>
                       <option value="jitter">Jitter</option>
                       <option value="vortex">Vortex</option>
+                      <option value="strobe">Strobe</option>
                       <option value="scramble">Scramble</option>
                       <option value="ripple">Ripple</option>
                     </select>
@@ -2194,86 +2181,13 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
                     </div>
                 )}
 
-                <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block', fontSize: '0.9rem', color: '#e5e7eb', marginTop: '12px' }}>
-                    Allowed Random Colors
-                </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(48px, 1fr))', gap: '8px' }}>
-                    {palette.slice(1).map((color, index) => {
-                        const colorIndex = index + 1;
-                        return (
-                            <label 
-                                key={colorIndex} 
-                                style={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    gap: '4px', 
-                                    cursor: 'pointer',
-                                    padding: '2px',
-                                    borderRadius: '6px',
-                                    outline: isSavingColor ? '2px dashed #54a0ff' : 'none',
-                                    outlineOffset: '2px',
-                                    transition: 'outline 0.2s',
-                                }}
-                                title={isSavingColor ? `Save ${customColor} to this slot` : `Toggle color for generation`}
-                                onClick={(e) => {
-                                    if (isSavingColor) {
-                                        e.preventDefault();
-                                        setPalette(p => {
-                                            const newPalette = [...p];
-                                            newPalette[colorIndex] = customColor;
-                                            return newPalette;
-                                        });
-                                        setIsSavingColor(false);
-                                        setSelectedColor(colorIndex);
-                                    }
-                                }}
-                            >
-                                <input
-                                    type="checkbox"
-                                    checked={generativeColorIndices.includes(colorIndex)}
-                                    onChange={() => handleGenerativeColorToggle(colorIndex)}
-                                    style={{ pointerEvents: isSavingColor ? 'none' : 'auto' }}
-                                />
-                                <div style={{ width: '20px', height: '20px', background: color, borderRadius: '4px' }} />
-                            </label>
-                        );
-                    })}
-                </div>
               </div>
-            )}
+                )}
 
-            {showOptions && showVisualSettings && (
-              <>
-                <div style={{ marginBottom: '10px' }}>
+                {showVisualSettings && (
+                  <div>
+                    <div style={{ marginBottom: '10px' }}>
                   
-        <div style={{ marginBottom: '12px' }}> {/* BRUSH PATCH */}
-          <label style={{ fontSize: '0.9rem', fontWeight: 500, display: 'block', marginBottom: '6px' }}>Brush Type</label>
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-            {(['square', 'circle', 'diagonal', 'spray'] as BrushType[]).map(type => (
-              <button
-                key={type}
-                onClick={() => setBrushType(type)}
-                style={{ padding: '6px 12px', borderRadius: '6px', background: brushType === type ? '#8b5cf6' : '#3a3a3c', color: '#fff', border: 'none', cursor: 'pointer' }}
-              >
-                {type.charAt(0).toUpperCase() + type.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        
-        {brushType === 'spray' && (
-          <div style={{ marginBottom: '10px' }}> {/* BRUSH PATCH */}
-            <label style={{ fontWeight: 600, marginBottom: '6px', display: 'block' }}>Spray Density: {sprayDensity.toFixed(2)}</label>
-            <input type="range" step={0.05} min={0.05} max={1} value={sprayDensity} onChange={e => setSprayDensity(Number(e.target.value))} />
-          </div>
-        )}
-        {brushType === 'diagonal' && (
-          <div style={{ marginBottom: '10px' }}> {/* BRUSH PATCH */}
-            <label style={{ fontWeight: 600, marginBottom: '6px', display: 'block' }}>Diagonal Thickness: {diagonalThickness}</label>
-            <input type="range" min={1} max={100} value={diagonalThickness} onChange={e => setDiagonalThickness(Number(e.target.value))} />
-          </div>
-        )}
 <label style={{ fontWeight: 600, marginBottom: '6px', display: 'block' }}>Blend Mode:</label>
                   <select
                     value={blendMode}
@@ -2312,11 +2226,95 @@ export default function ModularSettingsPaintStudio(): JSX.Element {
                     Show Grid
                   </label>
                 </div>
+                  </div>
+                )}
               </>
             )}
           </div>
         </div>
       </div>
+      
+      <div ref={canvasContainerRef} style={{ 
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}>
+        <canvas
+          ref={canvasRef}
+          style={{ 
+            display: 'block', 
+            cursor: 'default', 
+            background: backgroundColor 
+          }}
+        />
+      </div>
+      
+      {/* Resize Dialog */}
+      {showResizeDialog && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: '#1a1a1a',
+            padding: '24px',
+            borderRadius: '12px',
+            border: '1px solid #333',
+            maxWidth: '500px',
+            color: '#fff'
+          }}>
+            <h3 style={{ marginTop: 0, color: '#fff', fontSize: '18px' }}>Large Image Detected</h3>
+            <p style={{ marginBottom: '16px', lineHeight: '1.5' }}>
+              Your image is {pendingImage?.width} × {pendingImage?.height} pixels, which may be too large for comfortable viewing. 
+              A grid this size would create {pendingImage?.width && pendingImage?.height ? (pendingImage.width * pendingImage.height).toLocaleString() : 'many'} cells.
+            </p>
+            <p style={{ marginBottom: '20px', lineHeight: '1.5' }}>
+              We recommend resizing to {suggestedSize.width} × {suggestedSize.height} pixels 
+              ({(suggestedSize.width * suggestedSize.height).toLocaleString()} cells) for better performance.
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={handleResizeAccept}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: '#0066cc',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}
+              >
+                Resize Image
+              </button>
+              <button
+                onClick={handleResizeReject}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: '#666',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}
+              >
+                Use Original Size
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
