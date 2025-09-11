@@ -31,10 +31,8 @@ function RuleEditor({ label, rules, onChange }: { label: string, rules: number[]
             : [...rules, num];
         onChange(newRules.sort((a, b) => a - b));
     };
-
-    return (
-        <div style={{ marginBottom: '8px' }}>
-            <label style={{ fontSize: '0.85rem', fontWeight: 500, display: 'block', marginBottom: '4px' }}>{label}:</label>
+return (
+        <div style={{ marginBottom: '8px' }}><label style={{ fontSize: '0.85rem', fontWeight: 500, display: 'block', marginBottom: '4px' }}>{label}:</label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                 {numbers.map(num => (
                     <label key={num} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', background: '#241a1c', border: '1px solid #4a6b4f', padding: '4px 8px', borderRadius: '4px', userSelect: 'none' }}>
@@ -58,6 +56,79 @@ type SpreadPattern = 'random' | 'conway' | 'pulse' | 'directional' | 'tendrils' 
 
 
 export default function RoughImageGenerator(): JSX.Element {
+
+  // Inject global slider style once for the app (thicker, theme-matched)
+  useEffect(() => {
+    const styleEl = document.createElement('style');
+    styleEl.setAttribute('data-app-slider-theme', 'true');
+    styleEl.textContent = `
+      /* injected slider theme CSS */
+      input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 12px;
+        background: linear-gradient(180deg, #1a1214 0%, #0c0708 100%);
+        border: 1px solid #1c1315;
+        border-radius: 10px;
+        box-shadow: inset 0 1px 0 rgba(0,0,0,0.5), 0 0 0 1px #0c0708;
+        outline: none;
+      }
+      input[type="range"]:focus {
+        box-shadow: inset 0 1px 0 rgba(0,0,0,0.5), 0 0 0 1px #4a6b4f, 0 0 0 3px rgba(74,107,79,0.25);
+      }
+      /* WebKit */
+      input[type="range"]::-webkit-slider-runnable-track {
+        height: 12px;
+        background: linear-gradient(180deg, #1a1214 0%, #0c0708 100%);
+        border: 1px solid #1c1315;
+        border-radius: 10px;
+      }
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 16px;
+        height: 16px;
+        margin-top: -3px;
+        background: #241a1c;
+        border: 1px solid #4a6b4f;
+        border-radius: 8px;
+        box-shadow: 0 0 0 1px #0c0708, 0 4px 10px rgba(0,0,0,0.5);
+        cursor: pointer;
+      }
+      input[type="range"]:active::-webkit-slider-thumb {
+        transform: scale(1.05);
+      }
+      /* Firefox */
+      input[type="range"]::-moz-range-track {
+        height: 12px;
+        background: linear-gradient(180deg, #1a1214 0%, #0c0708 100%);
+        border: 1px solid #1c1315;
+        border-radius: 10px;
+      }
+      input[type="range"]::-moz-range-progress {
+        height: 12px;
+        background: rgba(74,107,79,0.35);
+        border: 1px solid #1c1315;
+        border-radius: 10px 0 0 10px;
+      }
+      input[type="range"]::-moz-range-thumb {
+        width: 16px;
+        height: 16px;
+        background: #241a1c;
+        border: 1px solid #4a6b4f;
+        border-radius: 8px;
+        box-shadow: 0 0 0 1px #0c0708, 0 4px 10px rgba(0,0,0,0.5);
+        cursor: pointer;
+      }
+    `;
+    document.head.appendChild(styleEl);
+    return () => {
+      if (styleEl.parentNode) styleEl.parentNode.removeChild(styleEl);
+    };
+  }, []);
+
+
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const canvasContainerRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -253,7 +324,7 @@ const [showVisualSettings, setShowVisualSettings] = useState(false);
     };
     window.addEventListener('resize', handleResize);
     handleResize();
-    return () => window.removeEventListener('resize', handleResize);
+return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   useEffect(() => {
@@ -1955,7 +2026,7 @@ const [showVisualSettings, setShowVisualSettings] = useState(false);
                             <input 
                                 type="checkbox" 
                                 checked={pulseOvertakes} 
-                                onChange={e => setPulseOvertakes(e.target.checked)} 
+                                onChange={(e) => setPulseOvertakes(e.target.checked)} 
                                 id="pulseOvertakes"
                             /> 
                             <label htmlFor="pulseOvertakes">New Drops Overtake Existing</label>
@@ -2032,6 +2103,7 @@ const [showVisualSettings, setShowVisualSettings] = useState(false);
             step={1}
             value={cellSize}
             onChange={(e) => setCellSize(Number(e.target.value))}
+
           />
         </div>
 
@@ -2043,7 +2115,7 @@ const [showVisualSettings, setShowVisualSettings] = useState(false);
                   <input 
                     type="color" 
                     value={backgroundColor} 
-                    onChange={e => setBackgroundColor(e.target.value)}
+                    onChange={(e) => setBackgroundColor(e.target.value)}
                     style={{ marginLeft: '8px' }}
                   />
                 </div>
@@ -2053,7 +2125,7 @@ const [showVisualSettings, setShowVisualSettings] = useState(false);
                     <input 
                       type="checkbox" 
                       checked={showGrid} 
-                      onChange={e => setShowGrid(e.target.checked)} 
+                      onChange={(e) => setShowGrid(e.target.checked)} 
                     /> 
                     Show Grid
                   </label>
