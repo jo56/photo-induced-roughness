@@ -1574,87 +1574,25 @@ export default function RoughImageGenerator(): JSX.Element {
 
             {showAutoControls && (
               <>
-                <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                  <button
-                    onClick={() => { toggleAutoSpread(); setIsSavingColor(false); }}
-                    disabled={!autoSpreadEnabled}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: '6px',
-                      background: autoSpreading 
-                        ? '#241a1c' 
-                        : autoSpreadEnabled 
-                          ? '#241a1c' 
-                          : 'linear-gradient(135deg, #8b4a47 0%, #a15856 100%)',
-                      color: '#d4c4c1',
-                      border: 'none',
-                      cursor: autoSpreadEnabled ? 'pointer' : 'not-allowed',
-                      fontWeight: 'normal',
-                      fontSize: '0.95rem',
-                      whiteSpace: 'nowrap',
-                      opacity: autoSpreadEnabled ? 1 : 0.6,
-                      boxShadow: autoSpreading ? '0 0 8px rgba(255, 255, 255, 0.4)' : 'none',
-                      transition: 'box-shadow 0.2s ease-in-out'
-                    }}
-                  >
-                    {autoSpreading ? 'Stop Spread' : 'Start Spread'}
-                  </button>
+                <div style={{ marginBottom: '16px' }}>
                   {[
-                    { 
-                      label: autoDots ? 'Stop Dots' : 'Start Dots', 
-                      onClick: toggleAutoDots, 
-                      active: autoDots,
-                      enabled: autoDotsEnabled
-                    },
-                    { 
-                      label: autoShapes ? 'Stop Shapes' : 'Start Shapes', 
-                      onClick: toggleAutoShapes, 
-                      active: autoShapes,
-                      enabled: autoShapesEnabled
-                    }
-                  ].map(({ label, onClick, active, enabled }) => (
-                    <button
+                    { label: autoSpreading ? 'Stop Spread' : 'Start Spread', isActive: autoSpreading, onClick: () => { toggleAutoSpread(); setIsSavingColor(false); }, enabled: autoSpreadEnabled },
+                    { label: autoDots ? 'Stop Dots' : 'Start Dots', isActive: autoDots, onClick: () => { toggleAutoDots(); setIsSavingColor(false); }, enabled: autoDotsEnabled },
+                    { label: autoShapes ? 'Stop Shapes' : 'Start Shapes', isActive: autoShapes, onClick: () => { toggleAutoShapes(); setIsSavingColor(false); }, enabled: autoShapesEnabled },
+                    { label: isAnyRunning ? 'Stop All' : 'Start All', isActive: isAnyRunning, onClick: () => { isAnyRunning ? stopAll() : startAllEnabled(); setIsSavingColor(false); }, enabled: anyEnabled || isAnyRunning }
+                  ].map(({ label, isActive, onClick, enabled }) => (
+                    <div
                       key={label}
-                      onClick={() => { onClick(); setIsSavingColor(false); }}
-                      disabled={!enabled}
-                      style={{
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        background: enabled ? '#241a1c' : 'linear-gradient(135deg, #8b4a47 0%, #a15856 100%)',
-                        color: '#d4c4c1',
-                        border: 'none',
-                        cursor: enabled ? 'pointer' : 'not-allowed',
-                        fontWeight: 'normal',
-                        fontSize: '0.95rem',
-                        whiteSpace: 'nowrap',
-                        opacity: enabled ? 1 : 0.6,
-                        boxShadow: active ? '0 0 8px rgba(255, 255, 255, 0.4)' : 'none',
-                        transition: 'box-shadow 0.2s ease-in-out'
+                      className={`section-header ${isActive ? 'active' : ''}`}
+                      onClick={enabled ? onClick : undefined}
+                      style={{ 
+                        opacity: enabled ? 1 : 0.4,
+                        cursor: enabled ? 'pointer' : 'not-allowed'
                       }}
                     >
-                      {label}
-                    </button>
+                      <div className="section-title">{label}</div>
+                    </div>
                   ))}
-                  <button
-                    onClick={() => { isAnyRunning ? stopAll() : startAllEnabled(); setIsSavingColor(false); }}
-                    disabled={!anyEnabled && !isAnyRunning}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: '6px',
-                      background: anyEnabled || isAnyRunning ? '#241a1c' : 'linear-gradient(135deg, #8b4a47 0%, #a15856 100%)',
-                      color: '#d4c4c1',
-                      border: 'none',
-                      cursor: anyEnabled || isAnyRunning ? 'pointer' : 'not-allowed',
-                      fontWeight: 'normal',
-                      fontSize: '0.95rem',
-                      whiteSpace: 'nowrap',
-                      opacity: anyEnabled || isAnyRunning ? 1 : 0.6,
-                      boxShadow: isAnyRunning ? '0 0 8px rgba(255, 255, 255, 0.4)' : 'none',
-                      transition: 'box-shadow 0.2s ease-in-out'
-                    }}
-                  >
-                    {isAnyRunning ? 'Stop All' : 'Start All'}
-                  </button>
                 </div>
               </>
             )}
@@ -1680,27 +1618,17 @@ export default function RoughImageGenerator(): JSX.Element {
             )}
             
             {showOptions && showStepControls && (
-              <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexWrap: 'wrap' }}>
+              <div style={{ marginBottom: '16px' }}>
                 {[
-                  { label: 'Spread Once', onClick: colorSpread }
+                  { label: 'Spread Once', onClick: () => { colorSpread(); setIsSavingColor(false); } }
                 ].map(({ label, onClick }) => (
-                  <button
+                  <div
                     key={label}
-                    onClick={() => { onClick(); setIsSavingColor(false); }}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: '6px',
-                      background: '#241a1c',
-                      color: '#d4c4c1',
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontWeight: 'normal',
-                      fontSize: '0.95rem',
-                      whiteSpace: 'nowrap'
-                    }}
+                    className="section-header"
+                    onClick={onClick}
                   >
-                    {label}
-                  </button>
+                    <div className="section-title">{label}</div>
+                  </div>
                 ))}
               </div>
             )}

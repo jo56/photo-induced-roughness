@@ -228,3 +228,81 @@ input[type="range"]::-webkit-slider-thumb:hover{
   letter-spacing:0.05em;
   cursor:pointer;
 }
+
+/* Auto Control Buttons */
+.auto-controls{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  margin:12px 0;
+}
+
+.auto-button{
+  position:relative;
+  padding:8px 16px;
+  background:var(--surface-hover);
+  border:1px solid var(--border-subtle);
+  color:var(--text-secondary);
+  cursor:pointer;
+  transition:all 0.3s ease;
+  font-weight:400;
+  font-size:0.8rem;
+  text-transform:uppercase;
+  letter-spacing:0.05em;
+  overflow:hidden;
+  clip-path:polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+
+.auto-button:disabled{
+  opacity:0.4;
+  cursor:not-allowed;
+  background:var(--surface-deep);
+}
+
+.auto-button:not(:disabled):hover{
+  background:var(--accent-subtle);
+  border-color:var(--copper);
+  color:var(--text-primary);
+  transform:translateY(-1px);
+}
+
+.auto-button.active{
+  background:linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+  border-color:var(--copper);
+  color:var(--text-primary);
+  box-shadow:inset 0 0 0 1px var(--copper), 0 0 12px rgba(205, 139, 118, 0.4);
+}
+
+.auto-button.active::before{
+  content:'';
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
+  bottom:0;
+  background:linear-gradient(45deg, transparent 48%, var(--copper) 49%, var(--copper) 51%, transparent 52%);
+  opacity:0.3;
+  animation:pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse{
+  0%, 100% { opacity:0.3; }
+  50% { opacity:0.6; }
+}
+
+.auto-button-primary{
+  background:linear-gradient(135deg, var(--accent-subtle) 0%, var(--accent) 100%);
+  border-color:var(--accent-warm);
+  color:var(--text-primary);
+  font-weight:500;
+}
+
+.auto-button-primary:not(:disabled):hover{
+  background:linear-gradient(135deg, var(--accent) 0%, var(--copper) 100%);
+  box-shadow:0 0 16px rgba(205, 139, 118, 0.3);
+}
+
+.auto-button-primary.active{
+  background:linear-gradient(135deg, var(--copper) 0%, var(--accent-warm) 100%);
+  box-shadow:inset 0 0 0 1px var(--copper), 0 0 20px rgba(205, 139, 118, 0.5);
+}
