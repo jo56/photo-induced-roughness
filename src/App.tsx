@@ -93,46 +93,112 @@ function CompactUploadButton({ imageFile, onClick }: { imageFile: File | null; o
       }}>
         <div style={{
           width: '18px',
-          height: '14px',
-          border: '2px solid var(--text-secondary)',
-          borderRadius: '2px',
-          position: 'relative',
-          background: 'transparent'
+          height: '18px',
+          position: 'relative'
         }}>
+          {/* Center dot */}
           <div style={{
             position: 'absolute',
-            top: '-6px',
-            left: '3px',
-            right: '3px',
-            height: '4px',
+            top: '50%',
+            left: '50%',
+            width: '2px',
+            height: '2px',
             background: 'var(--text-secondary)',
-            borderRadius: '2px 2px 0 0'
+            borderRadius: '50%',
+            transform: 'translate(-50%, -50%)'
           }}></div>
+          
+          {/* Spiral arms */}
           <div style={{
             position: 'absolute',
-            top: '2px',
-            left: '2px',
-            right: '2px',
+            top: '50%',
+            left: '50%',
+            width: '12px',
             height: '1px',
             background: 'var(--text-secondary)',
-            opacity: 0.6
+            transformOrigin: '0 50%',
+            transform: 'translate(0, -50%) rotate(0deg)',
+            borderRadius: '0.5px'
           }}></div>
           <div style={{
             position: 'absolute',
-            top: '5px',
-            left: '2px',
-            right: '2px',
+            top: '50%',
+            left: '50%',
+            width: '10px',
             height: '1px',
             background: 'var(--text-secondary)',
-            opacity: 0.6
+            transformOrigin: '0 50%',
+            transform: 'translate(0, -50%) rotate(72deg)',
+            borderRadius: '0.5px',
+            opacity: 0.8
           }}></div>
           <div style={{
             position: 'absolute',
-            top: '8px',
-            left: '2px',
+            top: '50%',
+            left: '50%',
+            width: '8px',
+            height: '1px',
+            background: 'var(--text-secondary)',
+            transformOrigin: '0 50%',
+            transform: 'translate(0, -50%) rotate(144deg)',
+            borderRadius: '0.5px',
+            opacity: 0.7
+          }}></div>
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
             width: '6px',
             height: '1px',
             background: 'var(--text-secondary)',
+            transformOrigin: '0 50%',
+            transform: 'translate(0, -50%) rotate(216deg)',
+            borderRadius: '0.5px',
+            opacity: 0.6
+          }}></div>
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            width: '4px',
+            height: '1px',
+            background: 'var(--text-secondary)',
+            transformOrigin: '0 50%',
+            transform: 'translate(0, -50%) rotate(288deg)',
+            borderRadius: '0.5px',
+            opacity: 0.5
+          }}></div>
+
+          {/* Outer dots */}
+          <div style={{
+            position: 'absolute',
+            top: '1px',
+            left: '50%',
+            width: '1px',
+            height: '1px',
+            background: 'var(--text-secondary)',
+            borderRadius: '50%',
+            transform: 'translateX(-50%)',
+            opacity: 0.7
+          }}></div>
+          <div style={{
+            position: 'absolute',
+            bottom: '1px',
+            right: '3px',
+            width: '1px',
+            height: '1px',
+            background: 'var(--text-secondary)',
+            borderRadius: '50%',
+            opacity: 0.5
+          }}></div>
+          <div style={{
+            position: 'absolute',
+            top: '3px',
+            right: '1px',
+            width: '1px',
+            height: '1px',
+            background: 'var(--text-secondary)',
+            borderRadius: '50%',
             opacity: 0.6
           }}></div>
         </div>
