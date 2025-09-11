@@ -1691,14 +1691,23 @@ return () => window.removeEventListener('resize', handleResize);
         ))}
       </div>
       {showStepControls && (
-        <div style={{ marginBottom: '12px' }}>
+        <div style={{ 
+            background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)', 
+            border: '1px solid #1c1315', 
+            padding: '8px', 
+            borderRadius: '6px',
+            marginBottom: '12px'
+        }}>
           {[
-            { label: 'Spread Once', onClick: () => { colorSpread(); setIsSavingColor(false); } }
-          ].map(({ label, onClick }) => (
+            { label: 'Spread Once', onClick: () => { colorSpread(); setIsSavingColor(false); } },
+            { label: 'Add One Dot', onClick: () => { addRandomDots(); setIsSavingColor(false); } },
+            { label: 'Add One Shape', onClick: () => { addRandomShapes(); setIsSavingColor(false); } }
+          ].map(({ label, onClick }, index, arr) => (
             <div
               key={label}
               className="section-header"
               onClick={onClick}
+              style={{ marginBottom: index === arr.length - 1 ? 0 : '4px' }}
             >
               <div className="section-title">{label}</div>
             </div>
@@ -2114,7 +2123,7 @@ return () => window.removeEventListener('resize', handleResize);
                     type="color" 
                     value={backgroundColor} 
                     onChange={(e) => setBackgroundColor(e.target.value)}
-                    style={{ marginLeft: '8px' }}
+                    style={{ marginLeft: '8px', border: '1px solid #1c1315', background: 'transparent', cursor: 'pointer', height: '28px', width: '40px' }}
                   />
                 </div>
 
