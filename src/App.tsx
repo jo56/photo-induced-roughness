@@ -2291,17 +2291,16 @@ return () => window.removeEventListener('resize', handleResize);
                         />
                         <label htmlFor="showGridCheck">Show Grid</label>
                     </div>
-                    <div style={{ fontWeight: 600, marginTop: '16px', marginBottom: '10px' }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div className="checkbox-container">
                         <input
                           type="checkbox"
                           checked={recordEnabled}
                           onChange={(e) => setRecordEnabled(e.target.checked)}
                           style={{ cursor: 'pointer' }}
                         />
-                        <span style={{ minWidth: '90px' }}>Recording</span>
-                      </label>
+                        <label htmlFor="showGridCheck">Recording</label>
                     </div>
+
 
                     {recordEnabled && (
                       <div style={{ marginBottom: '10px' }}>
