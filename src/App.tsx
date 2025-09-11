@@ -834,13 +834,11 @@ return () => window.removeEventListener('resize', handleResize);
 
     const imageData = ctx.getImageData(0, 0, imageWidth, imageHeight);
     const newGrid = createEmptyGrid(imageHeight, imageWidth);
-    const newPalette = [...palette];
+    const newPalette = [palette[0]]; // Keep only the background color
     const colorMap = new Map<string, number>();
 
-    // Initialize existing palette colors in the map
-    for (let i = 0; i < palette.length; i++) {
-      colorMap.set(palette[i].toLowerCase(), i);
-    }
+    // Initialize only background color in the map
+    colorMap.set(palette[0].toLowerCase(), 0);
 
     for (let r = 0; r < imageHeight; r++) {
       for (let c = 0; c < imageWidth; c++) {
@@ -1107,8 +1105,12 @@ return () => window.removeEventListener('resize', handleResize);
                 let r_start = 0, r_end = currentRows, r_inc = 1;
                 let c_start = 0, c_end = currentCols, c_inc = 1;
 
+                // Set iteration order to process in the opposite direction of flow
+                // This prevents pixels from being processed multiple times in the same frame
                 if (dir === 'up') { r_start = currentRows - 1; r_end = -1; r_inc = -1; }
+                else if (dir === 'down') { r_start = currentRows - 1; r_end = -1; r_inc = -1; }
                 if (dir === 'left') { c_start = currentCols - 1; c_end = -1; c_inc = -1; }
+                else if (dir === 'right') { c_start = currentCols - 1; c_end = -1; c_inc = -1; }
 
                 for (let r = r_start; r !== r_end; r += r_inc) {
                     for (let c = c_start; c !== c_end; c += c_inc) {
@@ -1123,9 +1125,11 @@ return () => window.removeEventListener('resize', handleResize);
                             const nr = r + dr;
                             const nc = c + dc;
 
-                            if (nr >= 0 && nr < currentRows && nc >= 0 && nc < currentCols && g[nr][nc] === 0) {
-                                if (!changes.has(`${nr},${nc}`)) {
-                                    changes.set(`${nr},${nc}`, color);
+                            // Allow flowing into any space within bounds (not just empty spaces)
+                            if (nr >= 0 && nr < currentRows && nc >= 0 && nc < currentCols) {
+                                const key = `${nr},${nc}`;
+                                if (!changes.has(key)) {
+                                    changes.set(key, color);
                                     empties.add(`${r},${c}`);
                                 }
                             }
@@ -1135,7 +1139,20 @@ return () => window.removeEventListener('resize', handleResize);
 
                 empties.forEach(key => {
                     const [r, c] = key.split(',').map(Number);
-                    if (!changes.has(key)) ng[r][c] = 0;
+                    // Instead of clearing to black, backfill with color from behind
+                    let backfillColor = 0;
+                    let dr = 0, dc = 0;
+                    if (dir === 'up') dr = 1;      // Fill from below
+                    else if (dir === 'down') dr = -1;   // Fill from above
+                    else if (dir === 'left') dc = 1;    // Fill from right
+                    else if (dir === 'right') dc = -1;  // Fill from left
+                    
+                    const br = r + dr;
+                    const bc = c + dc;
+                    if (br >= 0 && br < rowsRef.current && bc >= 0 && bc < colsRef.current) {
+                        backfillColor = g[br][bc];
+                    }
+                    ng[r][c] = backfillColor;
                 });
                 changes.forEach((color, key) => {
                     const [r, c] = key.split(',').map(Number);
