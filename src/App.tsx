@@ -1355,6 +1355,9 @@ return () => window.removeEventListener('resize', handleResize);
     }
   };
 
+  const isAnyRunning = autoSpreading || autoDots || autoShapes;
+  const anyEnabled = autoSpreadEnabled || autoDotsEnabled || autoShapesEnabled;
+
   const startAllEnabled = () => {
     if (autoSpreadEnabled && !autoSpreading) {
       runningRef.current = true;
@@ -1433,6 +1436,39 @@ return () => window.removeEventListener('resize', handleResize);
     };
   }, [isMobile, panelPos]);
 
+  // Keybinds for auto-run toggles
+  useEffect(() => {
+    const handleKeydown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName)) {
+        return;
+      }
+
+      switch (e.code) {
+        case 'Space':
+          e.preventDefault();
+          toggleAutoSpread();
+          break;
+        case 'KeyJ':
+          toggleAutoDots();
+          break;
+        case 'KeyK':
+          toggleAutoShapes();
+          break;
+        case 'KeyL':
+          isAnyRunning ? stopAll() : startAllEnabled();
+          break;
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeydown);
+    return () => {
+      window.removeEventListener('keydown', handleKeydown);
+    };
+  }, [isAnyRunning, startAllEnabled, stopAll, toggleAutoSpread, toggleAutoDots, toggleAutoShapes]);
+
   const handleRowsChange = useCallback((newRows: number) => {
     setRows(newRows);
     setGrid(currentGrid => {
@@ -1503,11 +1539,8 @@ return () => window.removeEventListener('resize', handleResize);
     setRippleChance(defaults.rippleChance);
   };
 
-  const isAnyRunning = autoSpreading || autoDots || autoShapes;
-  const anyEnabled = autoSpreadEnabled || autoDotsEnabled || autoShapesEnabled;
-
   const settingsContainerStyle: React.CSSProperties = {
-    background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)',
+    background: 'linear-gradient(145deg, rgba(26, 18, 20, 0.5) 0%, rgba(12, 7, 8, 0.5) 100%)',
     border: '1px solid #1c1315',
     padding: '16px',
     borderRadius: '6px',
@@ -1715,13 +1748,13 @@ return () => window.removeEventListener('resize', handleResize);
                     gap: '8px' 
                 }}>
                   <div className="section-header" onClick={() => { colorSpread(); setIsSavingColor(false); }}>
-                    <div className="section-title">Spread</div>
+                    <div className="section-title" style={{ fontSize: '0.8rem', padding: '10px 4px' }}>Spread</div>
                   </div>
                   <div className="section-header" onClick={() => { addRandomDots(); setIsSavingColor(false); }}>
-                    <div className="section-title">Add Dot</div>
+                    <div className="section-title" style={{ fontSize: '0.8rem', padding: '10px 4px' }}>Add Dot</div>
                   </div>
                   <div className="section-header" onClick={() => { addRandomShapes(); setIsSavingColor(false); }}>
-                    <div className="section-title">Add Shape</div>
+                    <div className="section-title" style={{ fontSize: '0.8rem', padding: '10px 4px' }}>Add Shape</div>
                   </div>
                 </div>
               </div>
@@ -2188,7 +2221,7 @@ return () => window.removeEventListener('resize', handleResize);
                 onClick={handleResizeAccept}
                 style={{
                   padding: '10px 20px',
-                  backgroundColor: '#0066cc',
+                  backgroundColor: '#666',
                   color: '#d4c4c1',
                   border: 'none',
                   borderRadius: '6px',
