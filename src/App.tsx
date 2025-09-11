@@ -1547,50 +1547,23 @@ export default function RoughImageGenerator(): JSX.Element {
             </div>
             
             
-            <div style={{ marginBottom: '12px' }}>
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <div className="control-group">
+              <div className="toggle-group">
                 <button
+                  className={`toggle-option ${showAutoControls ? 'active' : ''}`}
                   onClick={() => setShowAutoControls(prev => !prev)}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: '6px',
-                    background: showAutoControls ? 'linear-gradient(135deg, #8b4a47 0%, #a15856 100%)' : '#241a1c',
-                    color: '#d4c4c1',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontWeight: 'normal',
-                    fontSize: '0.95rem'
-                  }}
                 >
                   Auto
                 </button>
                 <button
+                  className={`toggle-option ${showOptions ? 'active' : ''}`}
                   onClick={() => setShowOptions(prev => !prev)}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: '6px',
-                    background: showOptions ? 'linear-gradient(135deg, #8b4a47 0%, #a15856 100%)' : '#241a1c',
-                    color: '#d4c4c1',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontWeight: 'normal',
-                    fontSize: '0.95rem'
-                  }}
                 >
                   Options
                 </button>
                 <button
+                  className="toggle-option"
                   onClick={() => { clear(); setIsSavingColor(false); }}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: '6px',
-                    background: '#241a1c',
-                    color: '#d4c4c1',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontWeight: 'normal',
-                    fontSize: '0.95rem'
-                  }}
                 >
                   Reset
                 </button>
@@ -1687,31 +1660,21 @@ export default function RoughImageGenerator(): JSX.Element {
             )}
 
             {showOptions && (
-              <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexWrap: 'wrap' }}>
+              <div style={{ marginBottom: '16px' }}>
                 {[
-                  { label: 'Speed', onClick: () => setShowSpeedSettings(prev => !prev), bg: showSpeedSettings ? 'linear-gradient(135deg, #8b4a47 0%, #a15856 100%)' : '#241a1c' },
-                  { label: 'Canvas', onClick: () => setShowCanvasSettings(prev => !prev), bg: showCanvasSettings ? 'linear-gradient(135deg, #8b4a47 0%, #a15856 100%)' : '#241a1c' },
-                  { label: 'Visual', onClick: () => setShowVisualSettings(prev => !prev), bg: showVisualSettings ? 'linear-gradient(135deg, #8b4a47 0%, #a15856 100%)' : '#241a1c' },
-                  { label: 'Generative', onClick: () => setShowGenerativeSettings(prev => !prev), bg: showGenerativeSettings ? 'linear-gradient(135deg, #8b4a47 0%, #a15856 100%)' : '#241a1c' },
-                  { label: 'Steps', onClick: () => setShowStepControls(prev => !prev), bg: showStepControls ? 'linear-gradient(135deg, #8b4a47 0%, #a15856 100%)' : '#241a1c' }
-                ].map(({ label, onClick, bg }) => (
-                  <button
+                  { label: 'Speed', isActive: showSpeedSettings, onClick: () => setShowSpeedSettings(prev => !prev) },
+                  { label: 'Canvas', isActive: showCanvasSettings, onClick: () => setShowCanvasSettings(prev => !prev) },
+                  { label: 'Visual', isActive: showVisualSettings, onClick: () => setShowVisualSettings(prev => !prev) },
+                  { label: 'Generative', isActive: showGenerativeSettings, onClick: () => setShowGenerativeSettings(prev => !prev) },
+                  { label: 'Steps', isActive: showStepControls, onClick: () => setShowStepControls(prev => !prev) }
+                ].map(({ label, isActive, onClick }) => (
+                  <div
                     key={label}
+                    className={`section-header ${isActive ? 'active' : ''}`}
                     onClick={onClick}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: '6px',
-                      background: bg,
-                      color: '#d4c4c1',
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontWeight: 'normal',
-                      fontSize: '0.95rem',
-                      whiteSpace: 'nowrap'
-                    }}
                   >
-                    {label}
-                  </button>
+                    <div className="section-title">{label}</div>
+                  </div>
                 ))}
               </div>
             )}
@@ -1760,10 +1723,10 @@ export default function RoughImageGenerator(): JSX.Element {
                       ['Dots Speed', autoDotsSpeed, 0.1, 100, 0.1, setAutoDotsSpeed, '/s'],
                       ['Shapes Speed', autoShapesSpeed, 0.1, 100, 0.1, setAutoShapesSpeed, '/s']
                     ].map(([label, value, min, max, step, setter, unit], idx) => (
-                      <div key={idx} style={{ marginBottom: '8px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                          <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>{label}:</label>
-                          <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>
+                      <div key={idx} className="slider-container">
+                        <div className="slider-label">
+                          <span>{label}</span>
+                          <span className="slider-value">
                             {label === 'Spread Rate' ? `${Math.round((value as number) * 100)}${unit}` : `${value}${unit}`}
                           </span>
                         </div>
@@ -1774,7 +1737,6 @@ export default function RoughImageGenerator(): JSX.Element {
                           step={step as number}
                           value={value as number}
                           onChange={(e) => (setter as any)(Number(e.target.value))}
-                          style={{ width: '100%', height: '6px' }}
                         />
                       </div>
                     ))}
@@ -1868,7 +1830,7 @@ export default function RoughImageGenerator(): JSX.Element {
           step={step as number}
           value={value as number}
           onChange={(e) => (setter as any)(Number(e.target.value))}
-          style={{ width: '100%', height: '6px' }}
+          className="slider-input"
         />
       </div>
     ))}
@@ -1942,7 +1904,7 @@ export default function RoughImageGenerator(): JSX.Element {
                               <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Ripple Chance:</label>
                               <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{Math.round(rippleChance*100)}%</span>
                           </div>
-                          <input type="range" min={0.01} max={0.5} step={0.01} value={rippleChance} onChange={(e) => setRippleChance(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                          <input type="range" min={0.01} max={0.5} step={0.01} value={rippleChance} onChange={(e) => setRippleChance(Number(e.target.value))} className="slider-input" />
                       </div>
                   </div>
                 )}
@@ -1954,7 +1916,7 @@ export default function RoughImageGenerator(): JSX.Element {
                               <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Swaps per Step:</label>
                               <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{scrambleSwaps}</span>
                           </div>
-                          <input type="range" min={1} max={100} value={scrambleSwaps} onChange={(e) => setScrambleSwaps(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                          <input type="range" min={1} max={100} value={scrambleSwaps} onChange={(e) => setScrambleSwaps(Number(e.target.value))} className="slider-input" />
                       </div>
                   </div>
                 )}
@@ -1966,7 +1928,7 @@ export default function RoughImageGenerator(): JSX.Element {
                               <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Vortex Count:</label>
                               <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{vortexCount}</span>
                           </div>
-                          <input type="range" min={1} max={50} value={vortexCount} onChange={(e) => setVortexCount(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                          <input type="range" min={1} max={50} value={vortexCount} onChange={(e) => setVortexCount(Number(e.target.value))} className="slider-input" />
                       </div>
                   </div>
                 )}
@@ -1978,14 +1940,14 @@ export default function RoughImageGenerator(): JSX.Element {
                               <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Expand Threshold:</label>
                               <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{strobeExpandThreshold} Neighbors</span>
                           </div>
-                          <input type="range" min={1} max={8} value={strobeExpandThreshold} onChange={(e) => setStrobeExpandThreshold(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                          <input type="range" min={1} max={8} value={strobeExpandThreshold} onChange={(e) => setStrobeExpandThreshold(Number(e.target.value))} className="slider-input" />
                       </div>
                       <div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                               <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Contract Threshold:</label>
                               <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{strobeContractThreshold} Neighbors</span>
                           </div>
-                          <input type="range" min={1} max={8} value={strobeContractThreshold} onChange={(e) => setStrobeContractThreshold(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                          <input type="range" min={1} max={8} value={strobeContractThreshold} onChange={(e) => setStrobeContractThreshold(Number(e.target.value))} className="slider-input" />
                       </div>
                   </div>
                 )}
@@ -1997,7 +1959,7 @@ export default function RoughImageGenerator(): JSX.Element {
                               <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Jitter Chance:</label>
                               <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{Math.round(jitterChance*100)}%</span>
                           </div>
-                          <input type="range" min={0} max={1} step={0.05} value={jitterChance} onChange={(e) => setJitterChance(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                          <input type="range" min={0} max={1} step={0.05} value={jitterChance} onChange={(e) => setJitterChance(Number(e.target.value))} className="slider-input" />
                       </div>
                   </div>
                 )}
@@ -2022,7 +1984,7 @@ export default function RoughImageGenerator(): JSX.Element {
                               <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Flow Chance:</label>
                               <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{Math.round(flowChance*100)}%</span>
                           </div>
-                          <input type="range" min={0} max={1} step={0.05} value={flowChance} onChange={(e) => setFlowChance(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                          <input type="range" min={0} max={1} step={0.05} value={flowChance} onChange={(e) => setFlowChance(Number(e.target.value))} className="slider-input" />
                       </div>
                   </div>
                 )}
@@ -2034,14 +1996,14 @@ export default function RoughImageGenerator(): JSX.Element {
                           <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Seek Strength:</label>
                           <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{Math.round(veinSeekStrength*100)}%</span>
                         </div>
-                        <input type="range" min={0} max={1} step={0.05} value={veinSeekStrength} onChange={(e) => setVeinSeekStrength(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                        <input type="range" min={0} max={1} step={0.05} value={veinSeekStrength} onChange={(e) => setVeinSeekStrength(Number(e.target.value))} className="slider-input" />
                     </div>
                     <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                           <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Branching Chance:</label>
                           <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{Math.round(veinBranchChance*100)}%</span>
                         </div>
-                        <input type="range" min={0} max={0.5} step={0.01} value={veinBranchChance} onChange={(e) => setVeinBranchChance(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                        <input type="range" min={0} max={0.5} step={0.01} value={veinBranchChance} onChange={(e) => setVeinBranchChance(Number(e.target.value))} className="slider-input" />
                     </div>
                   </div>
                 )}
@@ -2053,7 +2015,7 @@ export default function RoughImageGenerator(): JSX.Element {
                           <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Growth Threshold:</label>
                           <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{crystallizeThreshold} Neighbors</span>
                         </div>
-                        <input type="range" min={1} max={8} value={crystallizeThreshold} onChange={(e) => setCrystallizeThreshold(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                        <input type="range" min={1} max={8} value={crystallizeThreshold} onChange={(e) => setCrystallizeThreshold(Number(e.target.value))} className="slider-input" />
                     </div>
                   </div>
                 )}
@@ -2065,14 +2027,14 @@ export default function RoughImageGenerator(): JSX.Element {
                           <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Erosion Rate:</label>
                           <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{Math.round(erosionRate*100)}%</span>
                         </div>
-                        <input type="range" min={0.01} max={1} step={0.01} value={erosionRate} onChange={(e) => setErosionRate(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                        <input type="range" min={0.01} max={1} step={0.01} value={erosionRate} onChange={(e) => setErosionRate(Number(e.target.value))} className="slider-input" />
                     </div>
                     <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                           <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Core Protection:</label>
                           <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{erosionSolidity} Neighbors</span>
                         </div>
-                        <input type="range" min={1} max={8} value={erosionSolidity} onChange={(e) => setErosionSolidity(Number(e.target.value))} style={{ width: '100%', height: '6px' }} />
+                        <input type="range" min={1} max={8} value={erosionSolidity} onChange={(e) => setErosionSolidity(Number(e.target.value))} className="slider-input" />
                     </div>
                   </div>
                 )}
@@ -2098,7 +2060,7 @@ export default function RoughImageGenerator(): JSX.Element {
                             <input
                             type="range" min={1} max={8} step={1} value={randomWalkSpreadCount}
                             onChange={(e) => setRandomWalkSpreadCount(Number(e.target.value))}
-                            style={{ width: '100%', height: '6px' }}
+                            className="slider-input"
                             />
                         </div>
                     </div>
@@ -2130,7 +2092,7 @@ export default function RoughImageGenerator(): JSX.Element {
                             <input
                             type="range" min={1} max={60} value={pulseSpeed}
                             onChange={(e) => setPulseSpeed(Number(e.target.value))}
-                            style={{ width: '100%', height: '6px' }}
+                            className="slider-input"
                             />
                         </div>
                         <div style={{ marginBottom: '10px' }}>
@@ -2146,16 +2108,14 @@ export default function RoughImageGenerator(): JSX.Element {
                                 <option value="bottom-right">Bottom-Right</option>
                             </select>
                         </div>
-                        <div style={{ fontWeight: 500, marginTop: '10px', fontSize: '0.85rem' }}>
-                            <label>
-                                <input 
-                                    type="checkbox" 
-                                    checked={pulseOvertakes} 
-                                    onChange={e => setPulseOvertakes(e.target.checked)} 
-                                    style={{ marginRight: '6px' }}
-                                /> 
-                                New Drops Overtake Existing
-                            </label>
+                        <div className="checkbox-container">
+                            <input 
+                                type="checkbox" 
+                                checked={pulseOvertakes} 
+                                onChange={e => setPulseOvertakes(e.target.checked)} 
+                                id="pulseOvertakes"
+                            /> 
+                            <label htmlFor="pulseOvertakes">New Drops Overtake Existing</label>
                         </div>
                     </div>
                 )}
@@ -2187,7 +2147,7 @@ export default function RoughImageGenerator(): JSX.Element {
                           <input
                           type="range" min={0} max={1} step={0.05} value={directionalBiasStrength}
                           onChange={(e) => setDirectionalBiasStrength(Number(e.target.value))}
-                          style={{ width: '100%', height: '6px' }}
+                          className="slider-input"
                           />
                       </div>
                     </div>
@@ -2198,24 +2158,24 @@ export default function RoughImageGenerator(): JSX.Element {
 
                 {showVisualSettings && (
                   <div>
-                    <div style={{ marginBottom: '10px' }}>
-                  
-<label style={{ fontWeight: 600, marginBottom: '6px', display: 'block' }}>Blend Mode:</label>
-                  <select
-                    value={blendMode}
-                    onChange={(e) => setBlendMode(e.target.value)}
-                    style={{ 
-                      padding: '4px 8px', 
-                      borderRadius: '6px', 
-                      background: '#241a1c', 
-                      color: '#d4c4c1', 
-                      border: 'none',
-                      width: '100%'
-                    }}
-                  >
-                    <option value="replace">Replace</option>
-                    <option value="overlay">Overlay</option>
-                  </select>
+                    <div className="control-group">
+                  <div className="slider-label" style={{ marginBottom: '6px' }}>
+                    <span>Blend Mode</span>
+                  </div>
+                  <div className="toggle-group">
+                    <button 
+                      className={`toggle-option ${blendMode === 'replace' ? 'active' : ''}`}
+                      onClick={() => setBlendMode('replace')}
+                    >
+                      Replace
+                    </button>
+                    <button 
+                      className={`toggle-option ${blendMode === 'overlay' ? 'active' : ''}`}
+                      onClick={() => setBlendMode('overlay')}
+                    >
+                      Overlay
+                    </button>
+                  </div>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
