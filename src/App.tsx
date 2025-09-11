@@ -1548,12 +1548,12 @@ return () => window.removeEventListener('resize', handleResize);
             textTransform: 'uppercase',
             userSelect: 'none',
             display: 'flex',
-            justifyContent: 'space-between',
+            justifyContent: panelMinimized ? 'flex-end' : 'space-between',
             alignItems: 'center',
             color: '#8a7a77'
           }}
         >
-          <span>Induced Roughness</span>
+          {!panelMinimized && <span>Induced Roughness</span>}
           <button
             onClick={() => setPanelMinimized(prev => !prev)}
             style={{
