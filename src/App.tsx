@@ -326,7 +326,7 @@ export default function RoughImageGenerator(): JSX.Element {
   // === End Recording state & refs ===
 
   const defaults = {
-    cellSize: 2,
+    cellSize: 6,
     rows: 375,
     cols: 375,
     showGrid: false,
