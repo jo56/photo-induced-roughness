@@ -1572,54 +1572,61 @@ export default function RoughImageGenerator(): JSX.Element {
 
 
 
-            {showAutoControls && (
-              <>
-                <div style={{ marginBottom: '12px' }}>
-                  {[
-                    { label: autoSpreading ? 'Stop Spread' : 'Start Spread', isActive: autoSpreading, onClick: () => { toggleAutoSpread(); setIsSavingColor(false); }, enabled: autoSpreadEnabled },
-                    { label: autoDots ? 'Stop Dots' : 'Start Dots', isActive: autoDots, onClick: () => { toggleAutoDots(); setIsSavingColor(false); }, enabled: autoDotsEnabled },
-                    { label: autoShapes ? 'Stop Shapes' : 'Start Shapes', isActive: autoShapes, onClick: () => { toggleAutoShapes(); setIsSavingColor(false); }, enabled: autoShapesEnabled },
-                    { label: isAnyRunning ? 'Stop All' : 'Start All', isActive: isAnyRunning, onClick: () => { isAnyRunning ? stopAll() : startAllEnabled(); setIsSavingColor(false); }, enabled: anyEnabled || isAnyRunning }
-                  ].map(({ label, isActive, onClick, enabled }) => (
-                    <div
-                      key={label}
-                      className={`section-header ${isActive ? 'active' : ''}`}
-                      onClick={enabled ? onClick : undefined}
-                      style={{ 
-                        opacity: enabled ? 1 : 0.4,
-                        cursor: enabled ? 'pointer' : 'not-allowed'
-                      }}
-                    >
-                      <div className="section-title">{label}</div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {showAutoControls && showOptions && <div className="section-divider"></div>}
-
-            {showOptions && (
-              <div style={{ marginBottom: '12px' }}>
-                {[
-                  { label: 'Speed', isActive: showSpeedSettings, onClick: () => setShowSpeedSettings(prev => !prev) },
-                  { label: 'Canvas', isActive: showCanvasSettings, onClick: () => setShowCanvasSettings(prev => !prev) },
-                  { label: 'Visual', isActive: showVisualSettings, onClick: () => setShowVisualSettings(prev => !prev) },
-                  { label: 'Generative', isActive: showGenerativeSettings, onClick: () => setShowGenerativeSettings(prev => !prev) },
-                  { label: 'Steps', isActive: showStepControls, onClick: () => setShowStepControls(prev => !prev) }
-                ].map(({ label, isActive, onClick }) => (
-                  <div
-                    key={label}
-                    className={`section-header ${isActive ? 'active' : ''}`}
-                    onClick={onClick}
-                  >
-                    <div className="section-title">{label}</div>
-                  </div>
-                ))}
-              </div>
-            )}
             
-            {showOptions && showStepControls && (
+<div style={{ 
+  display: 'grid', 
+  gridTemplateColumns: (showAutoControls && showOptions) ? 'repeat(2, 1fr)' : '1fr',
+  gap: '12px',
+  marginBottom: '12px'
+}}>
+  {showAutoControls && (
+    <div>
+      <div style={{ marginBottom: '12px' }}>
+        {[
+          { label: autoSpreading ? 'Stop Spread' : 'Start Spread', isActive: autoSpreading, onClick: () => { toggleAutoSpread(); setIsSavingColor(false); }, enabled: autoSpreadEnabled },
+          { label: autoDots ? 'Stop Dots' : 'Start Dots', isActive: autoDots, onClick: () => { toggleAutoDots(); setIsSavingColor(false); }, enabled: autoDotsEnabled },
+          { label: autoShapes ? 'Stop Shapes' : 'Start Shapes', isActive: autoShapes, onClick: () => { toggleAutoShapes(); setIsSavingColor(false); }, enabled: autoShapesEnabled },
+          { label: isAnyRunning ? 'Stop All' : 'Start All', isActive: isAnyRunning, onClick: () => { isAnyRunning ? stopAll() : startAllEnabled(); setIsSavingColor(false); }, enabled: anyEnabled || isAnyRunning }
+        ].map(({ label, isActive, onClick, enabled }) => (
+          <div
+            key={label}
+            className={`section-header ${isActive ? 'active' : ''}`}
+            onClick={enabled ? onClick : undefined}
+            style={{ 
+              opacity: enabled ? 1 : 0.4,
+              cursor: enabled ? 'pointer' : 'not-allowed'
+            }}
+          >
+            <div className="section-title">{label}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )}
+  {showOptions && (
+    <div>
+      <div style={{ marginBottom: '12px' }}>
+        {[
+          { label: 'Speed', isActive: showSpeedSettings, onClick: () => setShowSpeedSettings(prev => !prev) },
+          { label: 'Canvas', isActive: showCanvasSettings, onClick: () => setShowCanvasSettings(prev => !prev) },
+          { label: 'Visual', isActive: showVisualSettings, onClick: () => setShowVisualSettings(prev => !prev) },
+          { label: 'Generative', isActive: showGenerativeSettings, onClick: () => setShowGenerativeSettings(prev => !prev) },
+          { label: 'Steps', isActive: showStepControls, onClick: () => setShowStepControls(prev => !prev) }
+        ].map(({ label, isActive, onClick }) => (
+          <div
+            key={label}
+            className={`section-header ${isActive ? 'active' : ''}`}
+            onClick={onClick}
+          >
+            <div className="section-title">{label}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )}
+</div>
+
+{showOptions && showStepControls && (
               <div style={{ marginBottom: '12px' }}>
                 {[
                   { label: 'Spread Once', onClick: () => { colorSpread(); setIsSavingColor(false); } }
