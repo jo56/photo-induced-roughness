@@ -1590,7 +1590,7 @@ export default function RoughImageGenerator(): JSX.Element {
         ].map(({ label, isActive, onClick, enabled }) => (
           <div
             key={label}
-            className={`section-header ${isActive ? "active" : ""}`} style={{ fontWeight: isActive ? "bold" : "normal", color: isActive ? "#e5e7eb" : "#e5e7eb" }}
+            className={`section-header ${isActive ? "active" : ""}`}
             onClick={enabled ? onClick : undefined}
             style={{ 
               opacity: enabled ? 1 : 0.4,
@@ -1615,7 +1615,7 @@ export default function RoughImageGenerator(): JSX.Element {
         ].map(({ label, isActive, onClick }) => (
           <div
             key={label}
-            className={`section-header ${isActive ? "active" : ""}`} style={{ fontWeight: isActive ? "bold" : "normal", color: isActive ? "#e5e7eb" : "#e5e7eb" }}
+            className={`section-header ${isActive ? "active" : ""}`}
             onClick={onClick}
           >
             <div className="section-title">{label}</div>
