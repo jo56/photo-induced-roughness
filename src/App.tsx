@@ -834,13 +834,11 @@ return () => window.removeEventListener('resize', handleResize);
 
     const imageData = ctx.getImageData(0, 0, imageWidth, imageHeight);
     const newGrid = createEmptyGrid(imageHeight, imageWidth);
-    const newPalette = [...palette];
+    const newPalette = [palette[0]]; // Keep only the background color
     const colorMap = new Map<string, number>();
 
-    // Initialize existing palette colors in the map
-    for (let i = 0; i < palette.length; i++) {
-      colorMap.set(palette[i].toLowerCase(), i);
-    }
+    // Initialize only background color in the map
+    colorMap.set(palette[0].toLowerCase(), 0);
 
     for (let r = 0; r < imageHeight; r++) {
       for (let c = 0; c < imageWidth; c++) {
