@@ -1141,7 +1141,20 @@ return () => window.removeEventListener('resize', handleResize);
 
                 empties.forEach(key => {
                     const [r, c] = key.split(',').map(Number);
-                    ng[r][c] = 0;
+                    // Instead of clearing to black, backfill with color from behind
+                    let backfillColor = 0;
+                    let dr = 0, dc = 0;
+                    if (dir === 'up') dr = 1;      // Fill from below
+                    else if (dir === 'down') dr = -1;   // Fill from above
+                    else if (dir === 'left') dc = 1;    // Fill from right
+                    else if (dir === 'right') dc = -1;  // Fill from left
+                    
+                    const br = r + dr;
+                    const bc = c + dc;
+                    if (br >= 0 && br < rowsRef.current && bc >= 0 && bc < colsRef.current) {
+                        backfillColor = g[br][bc];
+                    }
+                    ng[r][c] = backfillColor;
                 });
                 changes.forEach((color, key) => {
                     const [r, c] = key.split(',').map(Number);
