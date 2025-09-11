@@ -1506,6 +1506,14 @@ return () => window.removeEventListener('resize', handleResize);
   const isAnyRunning = autoSpreading || autoDots || autoShapes;
   const anyEnabled = autoSpreadEnabled || autoDotsEnabled || autoShapesEnabled;
 
+  const settingsContainerStyle: React.CSSProperties = {
+    background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)',
+    border: '1px solid #1c1315',
+    padding: '16px',
+    borderRadius: '6px',
+    marginBottom: '20px'
+  };
+
   return (
     <div style={{
       width: '100%',
@@ -1697,8 +1705,8 @@ return () => window.removeEventListener('resize', handleResize);
             )}
 
             {showOptions && showStepControls && (
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block', fontSize: '0.9rem', color: '#e5e7eb' }}>
+              <div style={settingsContainerStyle}>
+                <label style={{ fontWeight: 600, marginBottom: '12px', display: 'block', fontSize: '0.9rem', color: '#e5e7eb' }}>
                   Step Controls
                 </label>
                 <div style={{ 
@@ -1720,52 +1728,46 @@ return () => window.removeEventListener('resize', handleResize);
             )}
 
             {showOptions && showSpeedSettings && (
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: '1fr',
-                gap: '12px', 
-                marginBottom: '12px' 
-              }}>
-                {showSpeedSettings && (
-                  <div>
-                    <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block', fontSize: '0.9rem', color: '#e5e7eb' }}>
-                      Speed Controls
-                    </label>
-                    {[
-                      ['Spread Rate', spreadProbability, 0, 1, 0.01, setSpreadProbability, '%'],
-                      ['Spread Speed', autoSpreadSpeed, 0.25, 100, 0.25, setAutoSpreadSpeed, '/s'],
-                      ['Dots Speed', autoDotsSpeed, 0.1, 100, 0.1, setAutoDotsSpeed, '/s'],
-                      ['Shapes Speed', autoShapesSpeed, 0.1, 100, 0.1, setAutoShapesSpeed, '/s']
-                    ].map(([label, value, min, max, step, setter, unit], idx) => (
-                      <div key={idx} className="slider-container">
-                        <div className="slider-label">
-                          <span>{label}</span>
-                          <span className="slider-value">
-                            {label === 'Spread Rate' ? `${Math.round((value as number) * 100)}${unit}` : `${value}${unit}`}
-                          </span>
-                        </div>
-                        <input
-                          type="range"
-                          min={min as number}
-                          max={max as number}
-                          step={step as number}
-                          value={value as number}
-                          onChange={(e) => (setter as (value: number) => void)(Number(e.target.value))}
-                        />
-                      </div>
-                    ))}
+              <div style={settingsContainerStyle}>
+                <label style={{ fontWeight: 600, marginBottom: '4px', display: 'block', fontSize: '0.9rem', color: '#e5e7eb' }}>
+                  Speed Controls
+                </label>
+                {[
+                  ['Spread Rate', spreadProbability, 0, 1, 0.01, setSpreadProbability, '%'],
+                  ['Spread Speed', autoSpreadSpeed, 0.25, 100, 0.25, setAutoSpreadSpeed, '/s'],
+                  ['Dots Speed', autoDotsSpeed, 0.1, 100, 0.1, setAutoDotsSpeed, '/s'],
+                  ['Shapes Speed', autoShapesSpeed, 0.1, 100, 0.1, setAutoShapesSpeed, '/s']
+                ].map(([label, value, min, max, step, setter, unit], idx) => (
+                  <div key={idx} className="slider-container">
+                    <div className="slider-label">
+                      <span>{label}</span>
+                      <span className="slider-value">
+                        {label === 'Spread Rate' ? `${Math.round((value as number) * 100)}${unit}` : `${value}${unit}`}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={min as number}
+                      max={max as number}
+                      step={step as number}
+                      value={value as number}
+                      onChange={(e) => (setter as (value: number) => void)(Number(e.target.value))}
+                    />
                   </div>
-                )}
+                ))}
               </div>
             )}
             
             {showOptions && (
               <>
                 {showGenerativeSettings && (
-              <div style={{ marginBottom: '12px' }}>
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '10px' }}>
+              <div style={settingsContainerStyle}>
+                <label style={{ fontWeight: 600, marginBottom: '12px', display: 'block', fontSize: '0.9rem', color: '#e5e7eb' }}>
+                  Generative Controls
+                </label>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '16px' }}>
                   <div style={{ flexGrow: 1}}>
-                    <label style={{ fontWeight: 600, marginBottom: '6px', display: 'block' }}>Spread Pattern:</label>
+                    <label style={{ fontWeight: 500, marginBottom: '6px', display: 'block', fontSize: '0.85rem' }}>Spread Pattern:</label>
                     <select
                       value={spreadPattern}
                       onChange={(e) => {
@@ -1816,43 +1818,37 @@ return () => window.removeEventListener('resize', handleResize);
                 </div>
                 
                 {spreadPattern === 'ripple' && (
-                  <div style={{background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)', border: '1px solid #1c1315', padding: '8px', borderRadius: '6px'}}>
-                      <div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                              <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Ripple Chance:</label>
-                              <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{Math.round(rippleChance*100)}%</span>
-                          </div>
-                          <input type="range" min={0.01} max={0.5} step={0.01} value={rippleChance} onChange={(e) => setRippleChance(Number(e.target.value))} className="slider-input" />
+                  <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                          <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Ripple Chance:</label>
+                          <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{Math.round(rippleChance*100)}%</span>
                       </div>
+                      <input type="range" min={0.01} max={0.5} step={0.01} value={rippleChance} onChange={(e) => setRippleChance(Number(e.target.value))} className="slider-input" />
                   </div>
                 )}
 
                 {spreadPattern === 'scramble' && (
-                  <div style={{background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)', border: '1px solid #1c1315', padding: '8px', borderRadius: '6px'}}>
-                      <div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                              <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Swaps per Step:</label>
-                              <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{scrambleSwaps}</span>
-                          </div>
-                          <input type="range" min={1} max={100} value={scrambleSwaps} onChange={(e) => setScrambleSwaps(Number(e.target.value))} className="slider-input" />
+                  <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                          <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Swaps per Step:</label>
+                          <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{scrambleSwaps}</span>
                       </div>
+                      <input type="range" min={1} max={100} value={scrambleSwaps} onChange={(e) => setScrambleSwaps(Number(e.target.value))} className="slider-input" />
                   </div>
                 )}
                 
                 {spreadPattern === 'vortex' && (
-                  <div style={{background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)', border: '1px solid #1c1315', padding: '8px', borderRadius: '6px'}}>
-                      <div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                              <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Vortex Count:</label>
-                              <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{vortexCount}</span>
-                          </div>
-                          <input type="range" min={1} max={50} value={vortexCount} onChange={(e) => setVortexCount(Number(e.target.value))} className="slider-input" />
+                  <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                          <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Vortex Count:</label>
+                          <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{vortexCount}</span>
                       </div>
+                      <input type="range" min={1} max={50} value={vortexCount} onChange={(e) => setVortexCount(Number(e.target.value))} className="slider-input" />
                   </div>
                 )}
 
                 {spreadPattern === 'strobe' && (
-                  <div style={{background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)', border: '1px solid #1c1315', padding: '8px', borderRadius: '6px'}}>
+                  <div>
                       <div style={{ marginBottom: '8px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                               <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Expand Threshold:</label>
@@ -1871,19 +1867,17 @@ return () => window.removeEventListener('resize', handleResize);
                 )}
                 
                 {spreadPattern === 'jitter' && (
-                  <div style={{background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)', border: '1px solid #1c1315', padding: '8px', borderRadius: '6px'}}>
-                      <div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                              <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Jitter Chance:</label>
-                              <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{Math.round(jitterChance*100)}%</span>
-                          </div>
-                          <input type="range" min={0} max={1} step={0.05} value={jitterChance} onChange={(e) => setJitterChance(Number(e.target.value))} className="slider-input" />
+                  <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                          <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Jitter Chance:</label>
+                          <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{Math.round(jitterChance*100)}%</span>
                       </div>
+                      <input type="range" min={0} max={1} step={0.05} value={jitterChance} onChange={(e) => setJitterChance(Number(e.target.value))} className="slider-input" />
                   </div>
                 )}
                 
                 {spreadPattern === 'flow' && (
-                  <div style={{background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)', border: '1px solid #1c1315', padding: '8px', borderRadius: '6px'}}>
+                  <div>
                       <div style={{ marginBottom: '10px' }}>
                           <label style={{ fontSize: '0.85rem', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Flow Direction:</label>
                           <select
@@ -1908,7 +1902,7 @@ return () => window.removeEventListener('resize', handleResize);
                 )}
 
                 {spreadPattern === 'vein' && (
-                  <div style={{background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)', border: '1px solid #1c1315', padding: '8px', borderRadius: '6px'}}>
+                  <div>
                     <div style={{ marginBottom: '8px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                           <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Seek Strength:</label>
@@ -1927,19 +1921,17 @@ return () => window.removeEventListener('resize', handleResize);
                 )}
 
                 {spreadPattern === 'crystallize' && (
-                  <div style={{background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)', border: '1px solid #1c1315', padding: '8px', borderRadius: '6px'}}>
-                    <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                          <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Growth Threshold:</label>
-                          <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{crystallizeThreshold} Neighbors</span>
-                        </div>
-                        <input type="range" min={1} max={8} value={crystallizeThreshold} onChange={(e) => setCrystallizeThreshold(Number(e.target.value))} className="slider-input" />
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                      <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Growth Threshold:</label>
+                      <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{crystallizeThreshold} Neighbors</span>
                     </div>
+                    <input type="range" min={1} max={8} value={crystallizeThreshold} onChange={(e) => setCrystallizeThreshold(Number(e.target.value))} className="slider-input" />
                   </div>
                 )}
                 
                 {spreadPattern === 'erosion' && (
-                  <div style={{background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)', border: '1px solid #1c1315', padding: '8px', borderRadius: '6px'}}>
+                  <div>
                      <div style={{ marginBottom: '8px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                           <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Erosion Rate:</label>
@@ -1958,7 +1950,7 @@ return () => window.removeEventListener('resize', handleResize);
                 )}
 
                 {spreadPattern === 'random' && (
-                    <div style={{background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)', border: '1px solid #1c1315', padding: '8px', borderRadius: '6px'}}>
+                    <div>
                         <div style={{ marginBottom: '10px' }}>
                             <label style={{ fontSize: '0.85rem', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Walk Mode:</label>
                             <select
@@ -1985,23 +1977,21 @@ return () => window.removeEventListener('resize', handleResize);
                 )}
 
                 {spreadPattern === 'conway' && (
-                  <div style={{background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)', border: '1px solid #1c1315', padding: '8px', borderRadius: '6px'}}>
+                  <div>
                     <RuleEditor label="Survive Counts" rules={conwayRules.survive} onChange={(newSurvive) => setConwayRules(r => ({ ...r, survive: newSurvive }))} />
-
                     <RuleEditor label="Birth Counts" rules={conwayRules.born} onChange={(newBorn) => setConwayRules(r => ({ ...r, born: newBorn }))} />
                   </div>
                 )}
                 
                 {spreadPattern === 'tendrils' && (
-                  <div style={{background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)', border: '1px solid #1c1315', padding: '8px', borderRadius: '6px'}}>
+                  <div>
                      <RuleEditor label="Survive Counts" rules={tendrilsRules.survive} onChange={(newSurvive) => setTendrilsRules(r => ({ ...r, survive: newSurvive }))} />
-
                      <RuleEditor label="Birth Counts" rules={tendrilsRules.born} onChange={(newBorn) => setTendrilsRules(r => ({ ...r, born: newBorn }))} />
                   </div>
                 )}
                 
                 {spreadPattern === 'pulse' && (
-                    <div style={{background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)', border: '1px solid #1c1315', padding: '8px', borderRadius: '6px'}}>
+                    <div>
                         <div style={{ marginBottom: '8px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                             <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Pulse Speed:</label>
@@ -2039,7 +2029,7 @@ return () => window.removeEventListener('resize', handleResize);
                 )}
 
                 {spreadPattern === 'directional' && (
-                    <div style={{background: 'linear-gradient(145deg, #1a1214 0%, #0c0708 100%)', border: '1px solid #1c1315', padding: '8px', borderRadius: '6px'}}>
+                    <div>
                       <div style={{ marginBottom: '10px' }}>
                           <label style={{ fontSize: '0.85rem', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Bias Direction:</label>
                           <select
@@ -2075,65 +2065,61 @@ return () => window.removeEventListener('resize', handleResize);
                 )}
 
                 {showVisualSettings && (
-                  <div>
-                    <div className="control-group">
-                  <div className="slider-label" style={{ marginBottom: '6px' }}>
-                    <span>Blend Mode</span>
-                  </div>
-                  <div className="toggle-group">
-                    <button 
-                      className={`toggle-option ${blendMode === 'replace' ? 'active' : ''}`}
-                      onClick={() => setBlendMode('replace')}
-                    >
-                      Replace
-                    </button>
-                    <button 
-                      className={`toggle-option ${blendMode === 'overlay' ? 'active' : ''}`}
-                      onClick={() => setBlendMode('overlay')}
-                    >
-                      Overlay
-                    </button>
-                  </div>
+                  <div style={settingsContainerStyle}>
+                     <label style={{ fontWeight: 600, marginBottom: '12px', display: 'block', fontSize: '0.9rem', color: '#e5e7eb' }}>
+                      Visual Controls
+                    </label>
+                    <div className="slider-label" style={{ marginBottom: '6px' }}>
+                      <span>Blend Mode</span>
+                    </div>
+                    <div className="toggle-group">
+                      <button 
+                        className={`toggle-option ${blendMode === 'replace' ? 'active' : ''}`}
+                        onClick={() => setBlendMode('replace')}
+                      >
+                        Replace
+                      </button>
+                      <button 
+                        className={`toggle-option ${blendMode === 'overlay' ? 'active' : ''}`}
+                        onClick={() => setBlendMode('overlay')}
+                      >
+                        Overlay
+                      </button>
+                    </div>
 
-        <div className="slider-container">
-          <div className="slider-label">
-            <span>Cell Size</span>
-            <span className="slider-value">{cellSize} px</span>
-          </div>
-          <input
-            type="range"
-            min={1}
-            max={30}
-            step={1}
-            value={cellSize}
-            onChange={(e) => setCellSize(Number(e.target.value))}
+                    <div className="slider-container">
+                      <div className="slider-label">
+                        <span>Cell Size</span>
+                        <span className="slider-value">{cellSize} px</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={1}
+                        max={30}
+                        step={1}
+                        value={cellSize}
+                        onChange={(e) => setCellSize(Number(e.target.value))}
 
-          />
-        </div>
-
-
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-                  <label style={{ fontWeight: 600 }}>Background:</label>
-                  <input 
-                    type="color" 
-                    value={backgroundColor} 
-                    onChange={(e) => setBackgroundColor(e.target.value)}
-                    style={{ marginLeft: '8px', border: '1px solid #1c1315', background: 'transparent', cursor: 'pointer', height: '28px', width: '40px' }}
-                  />
-                </div>
-
-                <div style={{ fontWeight: 600, marginBottom: '10px' }}>
-                  <label>
-                    <input 
-                      type="checkbox" 
-                      checked={showGrid} 
-                      onChange={(e) => setShowGrid(e.target.checked)} 
-                    /> 
-                    Show Grid
-                  </label>
-                </div>
+                      />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', marginTop: '16px' }}>
+                      <label style={{ fontWeight: 500, fontSize: '0.85rem' }}>Background Color:</label>
+                      <input 
+                        type="color" 
+                        value={backgroundColor} 
+                        onChange={(e) => setBackgroundColor(e.target.value)}
+                        style={{ marginLeft: '8px', border: '1px solid #1c1315', background: 'transparent', cursor: 'pointer', height: '28px', width: '40px' }}
+                      />
+                    </div>
+                    <div className="checkbox-container">
+                        <input 
+                          type="checkbox" 
+                          checked={showGrid} 
+                          onChange={(e) => setShowGrid(e.target.checked)} 
+                          id="showGridCheck"
+                        /> 
+                        <label htmlFor="showGridCheck">Show Grid</label>
+                    </div>
                   </div>
                 )}
               </>
