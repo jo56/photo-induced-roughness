@@ -2031,7 +2031,7 @@ return () => window.removeEventListener('resize', handleResize);
                 height: '1px',
                 width: '100%',
                 background: 'linear-gradient(to right, transparent, rgba(212, 196, 193, 0.15), transparent)',
-                margin: '16px 0 20px 0'
+                margin: '8px 0 20px 0'
               }}></div>
             )}
 
