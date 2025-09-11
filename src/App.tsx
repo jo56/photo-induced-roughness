@@ -139,8 +139,7 @@ export default function RoughImageGenerator(): JSX.Element {
   const [blendMode, setBlendMode] = useState(defaults.blendMode);
   const [panelMinimized, setPanelMinimized] = useState(false);
   const [showSpeedSettings, setShowSpeedSettings] = useState(false);
-  const [showCanvasSettings, setShowCanvasSettings] = useState(false);
-  const [showVisualSettings, setShowVisualSettings] = useState(false);
+const [showVisualSettings, setShowVisualSettings] = useState(false);
   const [showGenerativeSettings, setShowGenerativeSettings] = useState(false);
   const [showStepControls, setShowStepControls] = useState(false);
   const [showAutoControls, setShowAutoControls] = useState(true);
@@ -1608,7 +1607,6 @@ export default function RoughImageGenerator(): JSX.Element {
       <div style={{ marginBottom: '12px' }}>
         {[
           { label: 'Speed', isActive: showSpeedSettings, onClick: () => setShowSpeedSettings(prev => !prev) },
-          { label: 'Canvas', isActive: showCanvasSettings, onClick: () => setShowCanvasSettings(prev => !prev) },
           { label: 'Visual', isActive: showVisualSettings, onClick: () => setShowVisualSettings(prev => !prev) },
           { label: 'Generative', isActive: showGenerativeSettings, onClick: () => setShowGenerativeSettings(prev => !prev) },
           { label: 'Steps', isActive: showStepControls, onClick: () => setShowStepControls(prev => !prev) }
@@ -1642,10 +1640,10 @@ export default function RoughImageGenerator(): JSX.Element {
               </div>
             )}
 
-            {showOptions && (showSpeedSettings || showCanvasSettings) && (
+            {showOptions && showSpeedSettings && (
               <div style={{ 
                 display: 'grid', 
-                gridTemplateColumns: showSpeedSettings && showCanvasSettings ? 'repeat(2, 1fr)' : '1fr',
+                gridTemplateColumns: '1fr',
                 gap: '12px', 
                 marginBottom: '12px' 
               }}>
@@ -1680,99 +1678,7 @@ export default function RoughImageGenerator(): JSX.Element {
                   </div>
                 )}
 
-{showCanvasSettings && (
-  <div>
-    <label
-      style={{
-        fontWeight: 600,
-        marginBottom: '8px',
-        display: 'block',
-        fontSize: '0.9rem',
-        color: '#e5e7eb'
-      }}
-    >
-      Canvas Settings
-    </label>
-    {[
-      ['Cell Size', cellSize, 1, 30, 1, setCellSize, ' px'],
-      ['Rows', rows, 10, 2000, 1, handleRowsChange, ''],
-      ['Cols', cols, 10, 2000, 1, handleColsChange, '']
-    ].map(([label, value, min, max, step, setter, unit], idx) => (
-      <div key={idx} style={{ marginBottom: '8px' }}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '2px'
-          }}
-        >
-          <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>
-            {label}:
-          </label>
 
-          {/* Rows/Cols: editable number input instead of static span */}
-          {label === 'Rows' || label === 'Cols' ? (
-            <input
-              type="number"
-              min={min as number}
-              max={max as number}
-              step={step as number}
-              value={value as number}
-              onChange={(e) => {
-                let newValue = Number(e.target.value);
-                if (isNaN(newValue)) return;
-                // Clamp immediately while typing
-                if (newValue < (min as number)) newValue = min as number;
-                if (newValue > (max as number)) newValue = max as number;
-                (setter as any)(newValue);
-              }}
-              style={{
-                width: '60px',
-                fontSize: '0.8rem',
-                color: '#9ca3af',
-                textAlign: 'right',
-                background: 'transparent',
-                border: 'none',
-                outline: 'none',
-                appearance: 'textfield',
-                MozAppearance: 'textfield'
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.color = '#fff';
-                e.currentTarget.style.background = '#1f2937';
-                e.currentTarget.style.border = '1px solid #4b5563';
-                e.currentTarget.style.borderRadius = '4px';
-                e.currentTarget.style.padding = '2px 4px';
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.color = '#9ca3af';
-                e.currentTarget.style.background = 'transparent';
-                e.currentTarget.style.border = 'none';
-                e.currentTarget.style.padding = '0';
-              }}
-            />
-          ) : (
-            <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>
-              {`${value}${unit}`}
-            </span>
-          )}
-        </div>
-
-        {/* Slider stays for all */}
-        <input
-          type="range"
-          min={min as number}
-          max={max as number}
-          step={step as number}
-          value={value as number}
-          onChange={(e) => (setter as any)(Number(e.target.value))}
-          className="slider-input"
-        />
-      </div>
-    ))}
-  </div>
-)}
 
 
               </div>
@@ -2113,6 +2019,23 @@ export default function RoughImageGenerator(): JSX.Element {
                       Overlay
                     </button>
                   </div>
+
+        <div className="slider-container">
+          <div className="slider-label">
+            <span>Cell Size</span>
+            <span className="slider-value">{cellSize} px</span>
+          </div>
+          <input
+            type="range"
+            min={1}
+            max={30}
+            step={1}
+            value={cellSize}
+            onChange={(e) => setCellSize(Number(e.target.value))}
+          />
+        </div>
+
+
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
