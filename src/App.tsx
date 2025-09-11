@@ -144,6 +144,17 @@ export default function RoughImageGenerator(): JSX.Element {
   const strobeStateRef = useRef(true); // true: expand, false: contract
   const ripplesRef = useRef<{r: number, c: number, color: number, radius: number, maxRadius: number}[]>([]);
 
+  // === Recording state & refs ===
+  const [recordEnabled, setRecordEnabled] = useState(true);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingFilename, setRecordingFilename] = useState("grid-recording");
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const [recordingToast, setRecordingToast] = useState<string | null>(null);
+
+  const sanitizeFilename = (name: string) => name.replace(/[^a-z0-9-_]+/gi, "_");
+  // === End Recording state & refs ===
+
   const defaults = {
     cellSize: 2,
     rows: 375,
@@ -180,7 +191,7 @@ export default function RoughImageGenerator(): JSX.Element {
   };
 
   const [palette, setPalette] = useState([
-    '#000000', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', 
+    '#000000', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4',
     '#feca57', '#ff9ff3', '#54a0ff', '#5f27cd'
   ]);
 
@@ -270,7 +281,7 @@ export default function RoughImageGenerator(): JSX.Element {
   const strobeContractThresholdRef = useRef(strobeContractThreshold);
   const scrambleSwapsRef = useRef(scrambleSwaps);
   const rippleChanceRef = useRef(rippleChance);
-  
+
   useEffect(() => { spreadProbabilityRef.current = spreadProbability; }, [spreadProbability]);
   useEffect(() => { autoSpreadSpeedRef.current = autoSpreadSpeed; }, [autoSpreadSpeed]);
   useEffect(() => { autoDotsSpeedRef.current = autoDotsSpeed; }, [autoDotsSpeed]);
@@ -313,6 +324,103 @@ export default function RoughImageGenerator(): JSX.Element {
   const mousePos = useRef({ x: 0, y: 0 });
   const [isMobile, setIsMobile] = useState(false);
 
+  // === Recording functions ===
+  const startRecording = () => {
+    if (!recordEnabled) {
+      setRecordingToast("Enable recording in Visual Settings first");
+      return;
+    }
+    const canvas = canvasRef.current as HTMLCanvasElement | null;
+    if (!canvas) {
+      setRecordingToast("Canvas not ready");
+      return;
+    }
+
+    const fps = 30;
+    const stream: MediaStream | null = (canvas as any).captureStream
+      ? canvas.captureStream(fps)
+      : (canvas as any).mozCaptureStream
+      ? (canvas as any).mozCaptureStream(fps)
+      : null;
+
+    if (!stream) {
+      setRecordingToast("Recording not supported in this browser");
+      return;
+    }
+
+    const candidates = [
+      "video/webm;codecs=vp9",
+      "video/webm;codecs=vp8",
+      "video/webm"
+    ];
+    let mimeType = "";
+    if (typeof MediaRecorder !== "undefined") {
+      for (const type of candidates) {
+        if ((MediaRecorder as any).isTypeSupported?.(type)) { mimeType = type; break; }
+      }
+    }
+
+    let recorder: MediaRecorder;
+    try {
+      recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+    } catch (e) {
+      setRecordingToast("Failed to start recorder");
+      return;
+    }
+    mediaRecorderRef.current = recorder;
+    recordedChunksRef.current = [];
+
+    recorder.ondataavailable = (e: BlobEvent) => {
+      if (e.data && e.data.size > 0) recordedChunksRef.current.push(e.data);
+    };
+    recorder.onerror = () => {
+      setRecordingToast("Recording error");
+    };
+    recorder.onstop = () => {
+      try {
+        if (recordedChunksRef.current.length === 0) {
+          setRecordingToast("No data captured");
+        } else {
+          const outType = recorder.mimeType || "video/webm";
+          const blob = new Blob(recordedChunksRef.current, { type: outType });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `${sanitizeFilename(recordingFilename || "grid-recording")}-${Date.now()}.webm`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          setRecordingToast("Recording saved");
+        }
+      } finally {
+        // Always stop stream tracks
+        stream.getTracks().forEach(t => t.stop());
+        setIsRecording(false);
+      }
+    };
+
+    try {
+      recorder.start(1000); // 1s timeslice ensures dataavailable fires
+      setIsRecording(true);
+      setRecordingToast("Recording started (press R to stop)");
+    } catch (e) {
+      setRecordingToast("Recorder start failed");
+    }
+  };
+
+  const stopRecording = () => {
+    const rec = mediaRecorderRef.current;
+    if (rec && rec.state !== "inactive") {
+      try {
+        rec.requestData?.();
+      } catch {}
+      rec.stop();
+      setRecordingToast("Stopping recording…");
+    }
+  };
+  // === End Recording functions ===
+
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth < 800;
@@ -339,7 +447,7 @@ return () => window.removeEventListener('resize', handleResize);
         else if (keys.has('KeyS')) newDirection = 'down';
         else if (keys.has('KeyA')) newDirection = 'left';
         else if (keys.has('KeyD')) newDirection = 'right';
-        
+
         if (newDirection) {
             const isDiagonal = newDirection.includes('-');
             const isCardinal = !isDiagonal;
@@ -366,7 +474,7 @@ return () => window.removeEventListener('resize', handleResize);
 
         const code = keyMap[e.code] || e.code;
         if (!relevantCodes.includes(code) || e.repeat) return;
-        
+
         e.preventDefault();
         pressedKeys.current.add(code);
         updateDirection();
@@ -378,7 +486,7 @@ return () => window.removeEventListener('resize', handleResize);
             pressedKeys.current.delete(code);
         }
     };
-    
+
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
 
@@ -443,6 +551,30 @@ return () => window.removeEventListener('resize', handleResize);
 
   useEffect(() => draw(), [draw]);
 
+  // === Recording shortcut + toast ===
+  useEffect(() => {
+    const handleRecordingShortcut = (e: KeyboardEvent) => {
+      if (e.key && e.key.toLowerCase() === "r" && recordEnabled) {
+        e.preventDefault();
+        if (isRecording) {
+          stopRecording();
+        } else {
+          startRecording();
+        }
+      }
+    };
+    window.addEventListener("keydown", handleRecordingShortcut);
+    return () => window.removeEventListener("keydown", handleRecordingShortcut);
+  }, [isRecording, recordEnabled, recordingFilename]);
+
+  useEffect(() => {
+    if (recordingToast) {
+      const t = setTimeout(() => setRecordingToast(null), 1400);
+      return () => clearTimeout(t);
+    }
+  }, [recordingToast]);
+  // === End Recording shortcut + toast ===
+
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -453,22 +585,22 @@ return () => window.removeEventListener('resize', handleResize);
       // Check if image is larger than screen
       const maxWidth = Math.floor(window.innerWidth * 0.8 / cellSize);
       const maxHeight = Math.floor(window.innerHeight * 0.8 / cellSize);
-      
+
       if (img.width > maxWidth || img.height > maxHeight) {
         // Calculate suggested size maintaining aspect ratio
         const aspectRatio = img.width / img.height;
         let newWidth = Math.min(img.width, maxWidth);
         let newHeight = Math.min(img.height, maxHeight);
-        
+
         if (newWidth / aspectRatio > maxHeight) {
           newWidth = maxHeight * aspectRatio;
         } else {
           newHeight = newWidth / aspectRatio;
         }
-        
-        setSuggestedSize({ 
-          width: Math.floor(newWidth), 
-          height: Math.floor(newHeight) 
+
+        setSuggestedSize({
+          width: Math.floor(newWidth),
+          height: Math.floor(newHeight)
         });
         setPendingImage(img);
         setShowResizeDialog(true);
@@ -523,13 +655,13 @@ return () => window.removeEventListener('resize', handleResize);
     // Use image dimensions directly for 1:1 pixel mapping
     const imageWidth = img.width;
     const imageHeight = img.height;
-    
+
     canvas.width = imageWidth;
     canvas.height = imageHeight;
-    
+
     // Draw image at original size for exact pixel mapping
     ctx.drawImage(img, 0, 0);
-    
+
     const imageData = ctx.getImageData(0, 0, imageWidth, imageHeight);
     const newGrid = createEmptyGrid(imageHeight, imageWidth);
     const newPalette = [...palette];
@@ -552,10 +684,10 @@ return () => window.removeEventListener('resize', handleResize);
           newGrid[r][c] = 0;
         } else {
           const rgb = `#${red.toString(16).padStart(2, '0')}${green.toString(16).padStart(2, '0')}${blue.toString(16).padStart(2, '0')}`;
-          
+
           // Check if this exact color already exists
           let colorIndex = colorMap.get(rgb.toLowerCase());
-          
+
           if (colorIndex === undefined) {
             // Color doesn't exist, add it to the palette
             colorIndex = newPalette.length;
@@ -575,6 +707,8 @@ return () => window.removeEventListener('resize', handleResize);
     setGrid(newGrid);
     setOriginalGrid(cloneGrid(newGrid));
   };
+
+
 
 
 
@@ -613,7 +747,7 @@ return () => window.removeEventListener('resize', handleResize);
                     }
                     ripple.radius += 0.5;
                 });
-                
+
                 // Filter out old ripples
                 ripplesRef.current = ripplesRef.current.filter(r => r.radius <= r.maxRadius);
 
@@ -652,7 +786,7 @@ return () => window.removeEventListener('resize', handleResize);
                     }
                     const cell1 = coloredCells[idx1];
                     const cell2 = coloredCells[idx2];
-                    
+
                     if (cell1 && cell2) {
                         const color1 = ng[cell1.r][cell1.c];
                         const color2 = ng[cell2.r][cell2.c];
@@ -667,15 +801,15 @@ return () => window.removeEventListener('resize', handleResize);
                 for (let i = 0; i < count; i++) {
                     const r = 1 + Math.floor(Math.random() * (currentRows - 2));
                     const c = 1 + Math.floor(Math.random() * (currentCols - 2));
-                    
+
                     const neighborsCoords = [
                         [r - 1, c - 1], [r - 1, c], [r - 1, c + 1],
                         [r, c + 1], [r + 1, c + 1], [r + 1, c],
                         [r + 1, c - 1], [r, c - 1]
                     ];
-                    
+
                     const originalColors = neighborsCoords.map(([nr, nc]) => g[nr][nc]);
-                    
+
                     // Clockwise rotation
                     neighborsCoords.forEach(([nr, nc], idx) => {
                         const sourceIndex = (idx + 7) % 8; // (idx - 1 + 8) % 8
@@ -686,7 +820,7 @@ return () => window.removeEventListener('resize', handleResize);
             }
             case 'strobe': {
                 strobeStateRef.current = !strobeStateRef.current;
-            
+
                 if (strobeStateRef.current) { // EXPAND
                     const expandThreshold = strobeExpandThresholdRef.current;
                     const locationsToColor = new Map<string, number>();
@@ -703,13 +837,13 @@ return () => window.removeEventListener('resize', handleResize);
                                         }
                                     }
                                 }
-            
+
                                 if (neighborColors.length >= expandThreshold) {
                                     const colorCounts = neighborColors.reduce((acc, color) => {
                                         acc[color] = (acc[color] || 0) + 1;
                                         return acc;
                                     }, {} as Record<number, number>);
-                                    
+
                                     let dominantColor = 0;
                                     let maxCount = 0;
                                     for (const color in colorCounts) {
@@ -729,7 +863,7 @@ return () => window.removeEventListener('resize', handleResize);
                         const [r, c] = key.split(',').map(Number);
                         ng[r][c] = color;
                     });
-            
+
                 } else { // CONTRACT
                     const contractThreshold = strobeContractThresholdRef.current;
                     for (let r = 0; r < currentRows; r++) {
@@ -799,13 +933,13 @@ return () => window.removeEventListener('resize', handleResize);
                 const empties = new Set<string>();
                 const dir = flowDirectionRef.current;
                 const chance = flowChanceRef.current;
-                
+
                 let r_start = 0, r_end = currentRows, r_inc = 1;
                 let c_start = 0, c_end = currentCols, c_inc = 1;
-        
+
                 if (dir === 'up') { r_start = currentRows - 1; r_end = -1; r_inc = -1; }
                 if (dir === 'left') { c_start = currentCols - 1; c_end = -1; c_inc = -1; }
-        
+
                 for (let r = r_start; r !== r_end; r += r_inc) {
                     for (let c = c_start; c !== c_end; c += c_inc) {
                         const color = g[r]?.[c];
@@ -815,10 +949,10 @@ return () => window.removeEventListener('resize', handleResize);
                             else if (dir === 'down') dr = 1;
                             else if (dir === 'left') dc = -1;
                             else if (dir === 'right') dc = 1;
-        
+
                             const nr = r + dr;
                             const nc = c + dc;
-        
+
                             if (nr >= 0 && nr < currentRows && nc >= 0 && nc < currentCols && g[nr][nc] === 0) {
                                 if (!changes.has(`${nr},${nc}`)) {
                                     changes.set(`${nr},${nc}`, color);
@@ -828,7 +962,7 @@ return () => window.removeEventListener('resize', handleResize);
                         }
                     }
                 }
-        
+
                 empties.forEach(key => {
                     const [r, c] = key.split(',').map(Number);
                     if (!changes.has(key)) ng[r][c] = 0;
@@ -891,14 +1025,14 @@ return () => window.removeEventListener('resize', handleResize);
                     } else {
                         bestDir = { dr: Math.floor(Math.random() * 3) - 1, dc: Math.floor(Math.random() * 3) - 1 };
                     }
-                    
+
                     const newR = Math.max(0, Math.min(currentRows - 1, walker.r + bestDir.dr));
                     const newC = Math.max(0, Math.min(currentCols - 1, walker.c + bestDir.dc));
-                    
+
                     walker.r = Math.floor(newR);
                     walker.c = Math.floor(newC);
                     ng[walker.r][walker.c] = walker.color;
-                    
+
                     if (Math.random() < veinBranchChanceRef.current) {
                         walkers.current.push({...walker});
                     }
@@ -921,11 +1055,11 @@ return () => window.removeEventListener('resize', handleResize);
                                    }
                                }
                            }
-                           
+
                            if (neighbors.length > 0) {
                                const counts: {[key:number]: number} = {};
                                neighbors.forEach(n => { counts[n] = (counts[n] || 0) + 1; });
-                               
+
                                for(const color in counts) {
                                    if (counts[color] >= crystallizeThresholdRef.current) {
                                        ng[r][c] = parseInt(color);
@@ -945,11 +1079,11 @@ return () => window.removeEventListener('resize', handleResize);
                                    }
                                }
                            }
-                           
+
                            if (neighbors.length >= crystallizeThresholdRef.current + 2) {
                                const counts: {[key:number]: number} = {};
                                neighbors.forEach(n => { counts[n] = (counts[n] || 0) + 1; });
-                               
+
                                for(const color in counts) {
                                    if (counts[color] >= crystallizeThresholdRef.current + 1) {
                                        ng[r][c] = parseInt(color);
@@ -989,14 +1123,14 @@ return () => window.removeEventListener('resize', handleResize);
                 const rules = pattern === 'conway' ? conwayRulesRef.current : tendrilsRulesRef.current;
                 const BORN = rules.born;
                 const SURVIVE = rules.survive;
-                
+
                 // First, preserve all existing pixels
                 for (let r = 0; r < currentRows; r++) {
                     for (let c = 0; c < currentCols; c++) {
                         ng[r][c] = g[r][c]; // Copy existing state
                     }
                 }
-                
+
                 // Then apply cellular automata rules only to empty spaces and unstable pixels
                 for (let r = 0; r < currentRows; r++) {
                     for (let c = 0; c < currentCols; c++) {
@@ -1015,7 +1149,7 @@ return () => window.removeEventListener('resize', handleResize);
                         }
 
                         const isAlive = g[r]?.[c] > 0;
-                        
+
                         // Only apply death rules with low probability to preserve image
                         if (isAlive && !SURVIVE.includes(liveNeighbors) && Math.random() < 0.1) {
                             ng[r][c] = 0;
@@ -1026,7 +1160,7 @@ return () => window.removeEventListener('resize', handleResize);
                                 acc[color] = (acc[color] || 0) + 1;
                                 return acc;
                             }, {} as Record<number, number>);
-                            
+
                             let dominantColor = 0;
                             let maxCount = 0;
                             for (const color in colorCounts) {
@@ -1090,7 +1224,7 @@ return () => window.removeEventListener('resize', handleResize);
                         }
                     }
                 }
-                
+
                 changes.forEach((color, key) => {
                     const [r, c] = key.split(',').map(Number);
                     ng[r][c] = color;
@@ -1111,7 +1245,7 @@ return () => window.removeEventListener('resize', handleResize);
                                 for (let dc = -1; dc <= 1; dc++) {
                                     if (dr === 0 && dc === 0) continue;
                                     if (mode === 'cardinal' && dr !== 0 && dc !== 0) continue;
-                                    
+
                                     const nr = r + dr;
                                     const nc = c + dc;
                                     if (nr >= 0 && nr < currentRows && nc >= 0 && nc < currentCols) {
@@ -1119,13 +1253,13 @@ return () => window.removeEventListener('resize', handleResize);
                                     }
                                 }
                             }
-                            
+
                             if (neighbors.length > 0) {
                                 for (let i = neighbors.length - 1; i > 0; i--) {
                                     const j = Math.floor(Math.random() * (i + 1));
                                     [neighbors[i], neighbors[j]] = [neighbors[j], neighbors[i]];
                                 }
-                                
+
                                 const count = randomWalkSpreadCountRef.current;
                                 for(let i=0; i < Math.min(count, neighbors.length); i++) {
                                     const randomNeighbor = neighbors[i];
@@ -1159,7 +1293,7 @@ return () => window.removeEventListener('resize', handleResize);
                             if (directionalBiasRef.current !== 'none' && Math.random() < directionalBiasStrengthRef.current) {
                                 const bias = directionalBiasRef.current;
                                 let dr = 0, dc = 0;
-                                
+
                                 switch (bias) {
                                     case 'up':          dr = -1; dc =  0; break;
                                     case 'down':        dr =  1; dc =  0; break;
@@ -1170,9 +1304,9 @@ return () => window.removeEventListener('resize', handleResize);
                                     case 'bottom-left': dr =  1; dc = -1; break;
                                     case 'bottom-right':dr =  1; dc =  1; break;
                                 }
-        
+
                                 const biasedNeighbor = { r: r + dr, c: c + dc };
-                                
+
                                 if (biasedNeighbor.r >= 0 && biasedNeighbor.r < currentRows && biasedNeighbor.c >= 0 && biasedNeighbor.c < currentCols) {
                                     ng[biasedNeighbor.r][biasedNeighbor.c] = currentColor;
                                     continue;
@@ -1206,7 +1340,7 @@ return () => window.removeEventListener('resize', handleResize);
             const color = availableColors[Math.floor(Math.random() * availableColors.length)];
             if(ng[r]) ng[r][c] = color;
         }
-        
+
         return ng;
     });
   }, [palette]);
@@ -1224,13 +1358,13 @@ return () => window.removeEventListener('resize', handleResize);
         for (let i = 0; i < numShapes; i++) {
             const color = availableColors[Math.floor(Math.random() * availableColors.length)];
             const shapeType = Math.random() > 0.5 ? 'rect' : 'line';
-            
+
             if (shapeType === 'rect') {
                 const startR = Math.floor(Math.random() * (currentRows - 5));
                 const startC = Math.floor(Math.random() * (currentCols - 5));
                 const width = Math.floor(Math.random() * 6) + 3;
                 const height = Math.floor(Math.random() * 6) + 3;
-                
+
                 for (let r = startR; r < Math.min(startR + height, currentRows); r++) {
                     for (let c = startC; c < Math.min(startC + width, currentCols); c++) {
                         if(ng[r]) ng[r][c] = color;
@@ -1241,24 +1375,24 @@ return () => window.removeEventListener('resize', handleResize);
                 const startC = Math.floor(Math.random() * currentCols);
                 const isHorizontal = Math.random() > 0.5;
                 const length = Math.floor(Math.random() * 10) + 5;
-                
+
                 for (let i = 0; i < length; i++) {
                     let r = startR;
                     let c = startC;
-                    
+
                     if (isHorizontal) {
                         c += i;
                     } else {
                         r += i;
                     }
-                    
+
                     if (r >= 0 && r < currentRows && c >= 0 && c < currentCols) {
                         if(ng[r]) ng[r][c] = color;
                     }
                 }
             }
         }
-        
+
         return ng;
     });
   }, [palette]);
@@ -1270,10 +1404,10 @@ return () => window.removeEventListener('resize', handleResize);
       if (!runningRef.current) return;
 
       const pattern = spreadPatternRef.current;
-      const speed = pattern === 'pulse' 
-        ? pulseSpeedRef.current 
+      const speed = pattern === 'pulse'
+        ? pulseSpeedRef.current
         : autoSpreadSpeedRef.current;
-      
+
       const interval = 1000 / Math.max(0.25, speed);
 
       // Skip frames for very slow speeds to reduce CPU usage
@@ -1412,7 +1546,7 @@ return () => window.removeEventListener('resize', handleResize);
         setPanelPos({ x: e.clientX - dragOffset.current.x, y: e.clientY - dragOffset.current.y });
     };
     const handleMouseUp = () => { isDragging.current = false; };
-    
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Shift') {
         e.preventDefault();
@@ -1423,11 +1557,11 @@ return () => window.removeEventListener('resize', handleResize);
         setPanelPos({ x: 24, y: desiredY });
       }
     };
-    
+
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
     window.addEventListener('keydown', handleKeyDown);
-    
+
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
@@ -1510,7 +1644,7 @@ return () => window.removeEventListener('resize', handleResize);
       setSelectedColor(index);
     }
   };
-  
+
 
   const resetGenerativeSettings = () => {
     setSpreadPattern(defaults.spreadPattern);
@@ -1558,6 +1692,11 @@ return () => window.removeEventListener('resize', handleResize);
       color: '#d4c4c1',
       gap: '20px'
     }}>
+      {recordingToast && (
+        <div style={{ position: 'fixed', top: 12, right: 12, background: 'rgba(0,0,0,0.8)', color: '#fff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.9rem', zIndex: 2000 }}>
+          {recordingToast}
+        </div>
+      )}
       <div
         ref={panelRef}
         style={{
@@ -1626,7 +1765,7 @@ return () => window.removeEventListener('resize', handleResize);
             pointerEvents: panelMinimized ? 'none' : 'auto',
             background: 'linear-gradient(180deg, transparent 0%, rgba(12, 7, 8, 0.3) 100%)'
           }}>
-            
+
             <div className="upload-area" onClick={() => document.getElementById('imageUpload')?.click()}>
               <div className="upload-text">
                 {imageFile ? `Uploaded: ${imageFile.name}` : 'Click to upload an image'}
@@ -1642,15 +1781,15 @@ return () => window.removeEventListener('resize', handleResize);
                 style={{ display: 'none' }}
               />
               {uploadedImage && (
-                <img 
-                  src={uploadedImage.src} 
-                  alt="Preview" 
+                <img
+                  src={uploadedImage.src}
+                  alt="Preview"
                   className="image-preview"
                 />
               )}
             </div>
-            
-            
+
+
             <div className="control-group">
               <div className="toggle-group">
                 <button
@@ -1674,9 +1813,9 @@ return () => window.removeEventListener('resize', handleResize);
               </div>
             </div>
 
-            
-<div style={{ 
-  display: 'grid', 
+
+<div style={{
+  display: 'grid',
   gridTemplateColumns: (showAutoControls && showOptions) ? 'repeat(2, 1fr)' : '1fr',
   gap: '12px',
   margin: '20px 0 12px 0'
@@ -1694,7 +1833,7 @@ return () => window.removeEventListener('resize', handleResize);
             key={label}
             className={`section-header ${isActive ? "active" : ""}`}
             onClick={enabled ? onClick : undefined}
-            style={{ 
+            style={{
               opacity: enabled ? 1 : 0.4,
               cursor: enabled ? 'pointer' : 'not-allowed'
             }}
@@ -1726,7 +1865,7 @@ return () => window.removeEventListener('resize', handleResize);
     </div>
   )}
 </div>
-            
+
             {showOptions && (showStepControls || showSpeedSettings || showVisualSettings || showGenerativeSettings) && (
               <div style={{
                 height: '1px',
@@ -1741,10 +1880,10 @@ return () => window.removeEventListener('resize', handleResize);
                 <label style={{ fontWeight: 600, marginBottom: '12px', display: 'block', fontSize: '0.9rem', color: '#e5e7eb' }}>
                   Step Controls
                 </label>
-                <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: 'repeat(3, 1fr)', 
-                    gap: '6px' 
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, 1fr)',
+                    gap: '6px'
                 }}>
                   <div className="section-header" onClick={() => { colorSpread(); setIsSavingColor(false); }}>
                     <div className="section-title" style={{ fontSize: '0.85rem' }}>Spread</div>
@@ -1789,7 +1928,7 @@ return () => window.removeEventListener('resize', handleResize);
                 ))}
               </div>
             )}
-            
+
             {showOptions && (
               <>
                 {showGenerativeSettings && (
@@ -1806,11 +1945,11 @@ return () => window.removeEventListener('resize', handleResize);
                           if (e.target.value === 'vein') walkers.current = []; // Reset walkers
                           setSpreadPattern(e.target.value as any);
                       }}
-                      style={{ 
-                        padding: '4px 8px', 
-                        borderRadius: '6px', 
-                        background: '#241a1c', 
-                        color: '#d4c4c1', 
+                      style={{
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        background: '#241a1c',
+                        color: '#d4c4c1',
                         border: 'none',
                         width: '100%'
                       }}
@@ -1848,7 +1987,7 @@ return () => window.removeEventListener('resize', handleResize);
                     Reset
                   </button>
                 </div>
-                
+
                 {spreadPattern === 'ripple' && (
                   <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
@@ -1868,7 +2007,7 @@ return () => window.removeEventListener('resize', handleResize);
                       <input type="range" min={1} max={100} value={scrambleSwaps} onChange={(e) => setScrambleSwaps(Number(e.target.value))} className="slider-input" />
                   </div>
                 )}
-                
+
                 {spreadPattern === 'vortex' && (
                   <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
@@ -1897,7 +2036,7 @@ return () => window.removeEventListener('resize', handleResize);
                       </div>
                   </div>
                 )}
-                
+
                 {spreadPattern === 'jitter' && (
                   <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
@@ -1907,7 +2046,7 @@ return () => window.removeEventListener('resize', handleResize);
                       <input type="range" min={0} max={1} step={0.05} value={jitterChance} onChange={(e) => setJitterChance(Number(e.target.value))} className="slider-input" />
                   </div>
                 )}
-                
+
                 {spreadPattern === 'flow' && (
                   <div>
                       <div style={{ marginBottom: '10px' }}>
@@ -1961,7 +2100,7 @@ return () => window.removeEventListener('resize', handleResize);
                     <input type="range" min={1} max={8} value={crystallizeThreshold} onChange={(e) => setCrystallizeThreshold(Number(e.target.value))} className="slider-input" />
                   </div>
                 )}
-                
+
                 {spreadPattern === 'erosion' && (
                   <div>
                      <div style={{ marginBottom: '8px' }}>
@@ -2014,14 +2153,14 @@ return () => window.removeEventListener('resize', handleResize);
                     <RuleEditor label="Birth Counts" rules={conwayRules.born} onChange={(newBorn) => setConwayRules(r => ({ ...r, born: newBorn }))} />
                   </div>
                 )}
-                
+
                 {spreadPattern === 'tendrils' && (
                   <div>
                      <RuleEditor label="Survive Counts" rules={tendrilsRules.survive} onChange={(newSurvive) => setTendrilsRules(r => ({ ...r, survive: newSurvive }))} />
                      <RuleEditor label="Birth Counts" rules={tendrilsRules.born} onChange={(newBorn) => setTendrilsRules(r => ({ ...r, born: newBorn }))} />
                   </div>
                 )}
-                
+
                 {spreadPattern === 'pulse' && (
                     <div>
                         <div style={{ marginBottom: '8px' }}>
@@ -2049,12 +2188,12 @@ return () => window.removeEventListener('resize', handleResize);
                             </select>
                         </div>
                         <div className="checkbox-container">
-                            <input 
-                                type="checkbox" 
-                                checked={pulseOvertakes} 
-                                onChange={(e) => setPulseOvertakes(e.target.checked)} 
+                            <input
+                                type="checkbox"
+                                checked={pulseOvertakes}
+                                onChange={(e) => setPulseOvertakes(e.target.checked)}
                                 id="pulseOvertakes"
-                            /> 
+                            />
                             <label htmlFor="pulseOvertakes">New Drops Overtake Existing</label>
                         </div>
                     </div>
@@ -2105,13 +2244,13 @@ return () => window.removeEventListener('resize', handleResize);
                       <span>Blend Mode</span>
                     </div>
                     <div className="toggle-group">
-                      <button 
+                      <button
                         className={`toggle-option ${blendMode === 'replace' ? 'active' : ''}`}
                         onClick={() => setBlendMode('replace')}
                       >
                         Replace
                       </button>
-                      <button 
+                      <button
                         className={`toggle-option ${blendMode === 'overlay' ? 'active' : ''}`}
                         onClick={() => setBlendMode('overlay')}
                       >
@@ -2136,22 +2275,67 @@ return () => window.removeEventListener('resize', handleResize);
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', marginTop: '16px' }}>
                       <label style={{ fontWeight: 500, fontSize: '0.85rem' }}>Background Color:</label>
-                      <input 
-                        type="color" 
-                        value={backgroundColor} 
+                      <input
+                        type="color"
+                        value={backgroundColor}
                         onChange={(e) => setBackgroundColor(e.target.value)}
                         style={{ marginLeft: '8px', border: '1px solid #1c1315', background: 'transparent', cursor: 'pointer', height: '28px', width: '40px' }}
                       />
                     </div>
                     <div className="checkbox-container">
-                        <input 
-                          type="checkbox" 
-                          checked={showGrid} 
-                          onChange={(e) => setShowGrid(e.target.checked)} 
+                        <input
+                          type="checkbox"
+                          checked={showGrid}
+                          onChange={(e) => setShowGrid(e.target.checked)}
                           id="showGridCheck"
-                        /> 
+                        />
                         <label htmlFor="showGridCheck">Show Grid</label>
                     </div>
+                    <div style={{ fontWeight: 600, marginTop: '16px', marginBottom: '10px' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input
+                          type="checkbox"
+                          checked={recordEnabled}
+                          onChange={(e) => setRecordEnabled(e.target.checked)}
+                          style={{ cursor: 'pointer' }}
+                        />
+                        <span style={{ minWidth: '90px' }}>Recording</span>
+                      </label>
+                    </div>
+
+                    {recordEnabled && (
+                      <div style={{ marginBottom: '10px' }}>
+                        <label
+                          style={{
+                            display: 'block',
+                            fontSize: '0.8rem',
+                            color: '#d1d5db',
+                            marginBottom: '6px',
+                          }}
+                        >
+                          Filename:
+                        </label>
+                        <input
+                          type="text"
+                          value={recordingFilename}
+                          onChange={(e) => setRecordingFilename(e.target.value)}
+                          placeholder="Enter filename (no extension)"
+                          style={{
+                            width: '100%',
+                            padding: '6px 8px',
+                            marginBottom: '8px',
+                            borderRadius: '6px',
+                            border: '1px solid #555',
+                            background: '#2a2a2a',
+                            color: '#fff',
+                            fontSize: '0.9rem',
+                          }}
+                        />
+                        <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '4px' }}>
+                          Press <strong>R</strong> to start/stop recording
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </>
@@ -2159,8 +2343,8 @@ return () => window.removeEventListener('resize', handleResize);
           </div>
         </div>
       </div>
-      
-      <div ref={canvasContainerRef} style={{ 
+
+      <div ref={canvasContainerRef} style={{
         flex: 1,
         display: 'flex',
         justifyContent: 'center',
@@ -2172,9 +2356,9 @@ return () => window.removeEventListener('resize', handleResize);
       }}>
         <canvas
           ref={canvasRef}
-          style={{ 
-            display: 'block', 
-            cursor: 'default', 
+          style={{
+            display: 'block',
+            cursor: 'default',
             background: backgroundColor,
             border: 'none',
             boxShadow: 'inset 0 0 0 1px #1c1315, inset 2px 2px 8px rgba(0,0,0,0.8), inset -1px -1px 4px #1a1214',
@@ -2182,7 +2366,7 @@ return () => window.removeEventListener('resize', handleResize);
           }}
         />
       </div>
-      
+
       {/* Resize Dialog */}
       {showResizeDialog && (
         <div style={{
@@ -2208,11 +2392,11 @@ return () => window.removeEventListener('resize', handleResize);
           }}>
             <h3 style={{ marginTop: 0, color: '#d4c4c1', fontSize: '18px' }}>Large Image Detected</h3>
             <p style={{ marginBottom: '16px', lineHeight: '1.5' }}>
-              Your image is {pendingImage?.width} × {pendingImage?.height} pixels, which may be too large for comfortable viewing. 
+              Your image is {pendingImage?.width} × {pendingImage?.height} pixels, which may be too large for comfortable viewing.
               A grid this size would create {pendingImage?.width && pendingImage?.height ? (pendingImage.width * pendingImage.height).toLocaleString() : 'many'} cells.
             </p>
             <p style={{ marginBottom: '20px', lineHeight: '1.5' }}>
-              We recommend resizing to {suggestedSize.width} × {suggestedSize.height} pixels 
+              We recommend resizing to {suggestedSize.width} × {suggestedSize.height} pixels
               ({(suggestedSize.width * suggestedSize.height).toLocaleString()} cells) for better performance.
             </p>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
