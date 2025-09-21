@@ -1,4 +1,4 @@
-# induced-roughness — React + TypeScript
+# photo-induced-roughness — React + TypeScript
 
 ### Quick Start
 
