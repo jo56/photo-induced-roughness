@@ -1919,7 +1919,7 @@ return () => window.removeEventListener('resize', handleResize);
             color: '#8a7a77'
           }}
         >
-          <span>Induced Roughness</span>
+          <span>Photo-Induced Roughness</span>
           <button
             onClick={() => setPanelMinimized(prev => !prev)}
             style={{
