@@ -1,5 +1,7 @@
 # photo-induced-roughness
 
+This tool allows users to upload images which are then converted into a grid that runs cellular automota-like spread patterns, changing and distorting the pictures with random vairance to create new images. 
+
 ### Quick Start
 
 1. `npm install`  
