@@ -1,4 +1,6 @@
-# photo-induced-roughness — React + TypeScript
+# photo-induced-roughness
+
+Allows users to upload images which are then converted into a grid that runs cellular automata-like spread patterns, changing and distorting the pictures with random variance to create new images. 
 
 ### Quick Start
 
